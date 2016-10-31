@@ -18,6 +18,8 @@ var ext = require('../ext');
 var cached = require('../cached');
 var mail = require('../mail');
 var ifElse = require('gulp-if-else');
+var location = require('../location.js');
+var mod = require('../mod.js');
 
 // 数组去重
 function unique(array) {
@@ -176,6 +178,8 @@ Base.prototype = {
     lang: function (stream) {
         stream = stream
             .pipe(inline())
+            .pipe(location())
+            .pipe(mod())
             .pipe(embed());
         return stream;
     },
@@ -332,28 +336,6 @@ Base.handler = {
 
         optimize: function (stream) {
             return stream;
-        }
-    },
-    m2c: {
-        filter: function (path) {
-            var extname = _.extname(path);
-
-            return _.isJs(extname) || _.isHtml(extname);
-        },
-        postrelease: function (stream) {
-
-            if (this.conf.mod) {
-                var m2c = require('../m2c');
-
-                return stream.pipe(m2c({
-                    root: this._cwd,
-                    ns: this._ns || 'sm',
-                    fileBasedRoot: true
-                }));
-            } else {
-                return stream;
-            }
-
         }
     }
 

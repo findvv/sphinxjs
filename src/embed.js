@@ -3,8 +3,36 @@ var through = require('through2');
 var _ = require('./util');
 var lang = require('./lang');
 var Store = require('./store');
+var config = require('./configure/config');
 
 var store = new Store;
+
+var dTmpl = {
+    js: '<script type="text/javascript" src="{0}"></script>',
+    css: '<link rel="stylesheet" type="text/css" href="{0}">'
+};
+
+function buildTag(deps) {
+    var existsDep = [],
+        ret = '',
+        tmpl = config.tmpl || dTmpl;
+
+    deps = deps || [];
+
+    deps.forEach(function (v) {
+        if (existsDep.indexOf(v) == -1) {
+            var extname = _.extname(v),
+                ext = extname.replace('.', '');
+
+            if (_.isJs(extname) || _.isCss(extname)) {
+                ret += tmpl[ext].replace(/\{\d{1}\}/, '/' + v) + '\r';
+                existsDep.push(v);
+            }
+        }
+    });
+
+    return ret;
+}
 
 module.exports = function () {
     return through.obj(function (file, enc, cb) {
@@ -56,8 +84,10 @@ module.exports = function () {
             cwd = file.cwd;
 
             contents = contents.replace(lang.reg, function (all, type, depth, url, extra) {
-                var info, obj, ret, message;
+                var info, obj, ret = all,
+                    message;
 
+                url = url.replace(/\\\'/ig, '');
                 info = _.uri(url, dirname, cwd);
                 obj = store.find(info.release);
 
@@ -88,21 +118,32 @@ module.exports = function () {
                             }
 
                             break;
-                        case 'uri':
-                            if (info.url && info.exists) {
-                                ret = info.quote + info.url + info.quote;
-                            } else {
-                                ret = url;
+                        case 'depsEmbed':
+                            var deps = [],
+                                adeps = [];
+
+                            ret = '';
+
+                            if (!file.depsOrder) {
+                                break;
                             }
 
-                            break;
-                        case 'require':
-                            if (info.id && info.exists) {
-                                ret = info.quote + info.id + info.quote;
-                            } else {
-                                ret = url;
-                            }
+                            deps = file.depsOrder[all] || [];
 
+                            deps.forEach(function (v) {
+                                var uriInfo = _.uri(v, cwd, cwd),
+                                    tmp = store.find(uriInfo.release);
+
+                                if (tmp) {
+                                    var tfile = tmp.file;
+
+                                    adeps = adeps.concat(tfile.adeps, v);
+
+                                }
+
+                            });
+
+                            ret = buildTag(adeps) || '';
                             break;
                     }
 
@@ -121,7 +162,63 @@ module.exports = function () {
             stream.push(file);
         }
 
-        store.each(embed);
+        function analysis(obj) {
+            var cwd, file;
+
+            file = obj.file;
+            cwd = file.cwd;
+            if (file.adeps) {
+                return file.adeps;
+            };
+
+            function recursion(file, map) {
+                var realpath = file.path,
+                    subpath = file.relative,
+                    deps;
+
+                map = map || [];
+
+                if (file.deps) {
+                    deps = file.deps;
+                } else {
+                    return map;
+                }
+
+                for (var ci, info, rfile, len = deps.length, tmp, i = len - 1; ci = deps[i], i >= 0; i--) {
+                    info = _.uri(ci, cwd, cwd);
+                    tmp = store.find(info.release);
+                    if (tmp) {
+                        rfile = tmp.file;
+                        if (rfile && rfile.deps && rfile.deps.indexOf(ci) >= 0) {
+                            error('文件[' + subpath + ']和文件[' + ci + ']循环引用');
+                        }
+                        map.unshift(ci);
+                        if (_.isJs(_.extname(ci))) {
+                            recursion(rfile, map);
+                        }
+                    }
+                }
+
+                for (var j = 0, ko = {}, cj; cj = map[j]; j++) {
+                    if (cj in ko) {
+                        map.splice(j, 1);
+                    } else {
+                        ko[cj] = true;
+                    }
+                }
+
+                return map;
+
+            }
+            file.adeps = recursion(file);
+        }
+
+        store.each(function (obj) {
+            analysis(obj);
+        });
+        store.each(function (obj) {
+            embed(obj);
+        });
 
         // 清空
         store.clear();

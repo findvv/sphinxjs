@@ -16,7 +16,7 @@ module.exports = (function () {
             keywords.push(type);
             map[type] = {
                 wrap: function (value) {
-                    return this.ld + slice.call(arguments, 0).join(delim) + this.rd;
+                    return '"' + this.ld + slice.call(arguments, 0).join(delim) + this.rd + '"';
                 }
             };
 
@@ -42,9 +42,10 @@ module.exports = (function () {
     // 获取能识别中间码的正则
     Object.defineProperty(map, 'reg', {
         get: function () {
+
             return new RegExp(
-                rdelim + '(' + keywords.join('|') + ')(\\d+?)' + rdelim + '([^' + rdelim + ']*?)(?:' + rdelim + '([^' + rdelim + ']+?))?' + rdelim + '\\2\\1' + rdelim,
-                'g'
+                '["\']{1}' + rdelim + '(' + keywords.join('|') + ')(\\d+?)' + rdelim + '([^' + rdelim + ']*?)(?:' + rdelim + '([^' + rdelim + ']+?))?' + rdelim + '\\2\\1' + rdelim + '["\']{1}',
+                'gmi'
             );
         }
     });
@@ -55,6 +56,7 @@ module.exports = (function () {
         // 'jsRequire', // 同步 js 依赖
         'embed', // 内嵌其他文件
         'jsEmbed', // 内嵌 js 文件内容
+        'depsEmbed', // html模块化分析后内嵌
         // 'async', // 异步依赖
         // 'jsAsync', // js 异步依赖
         'uri', // 替换成目标文件的 url

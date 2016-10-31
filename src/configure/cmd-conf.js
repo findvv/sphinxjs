@@ -10,12 +10,7 @@ var release = {
             describe: '使用glob配置要编译的文件',
             'default': '**'
         },
-        mod: {
-            alias: 'm',
-            demand: false,
-            type: 'boolean',
-            describe: '启用模块化，编译使用COMMONJS规范的JS'
-        },
+
         dest: {
             alias: 'd',
             demand: false,
