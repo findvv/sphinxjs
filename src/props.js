@@ -2,6 +2,8 @@
 'use strict';
 var through = require('through2');
 
+
+
 module.exports = function () {
     return through.obj(function (file, enc, cb) {
         var props = {};
@@ -30,9 +32,21 @@ module.exports = function () {
                 configurable: false
             });
 
+            Object.defineProperty(props, 'cache', {
+                value: {
+                    contnets: new lazystream.Readable(function () {
+                        return
+                    })
+                },
+                writable: false,
+                configurable: false
+            });
+
             Object.defineProperty(file, 'sphinx', {
                 value: props
             });
+
+
 
             this.push(file);
             return cb();

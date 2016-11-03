@@ -4,8 +4,9 @@ var _ = require('./util');
 var lang = require('./lang');
 var Store = require('./store');
 var config = require('./configure/config');
-
+var objectAssign = require('object-assign');
 var store = new Store;
+var pth = require('path');
 
 var dTmpl = {
     js: '<script type="text/javascript" src="{0}"></script>',
@@ -51,6 +52,7 @@ module.exports = function () {
                 file: file,
                 piped: false
             });
+
             cb();
         }
     }, function (cb) {
@@ -73,7 +75,7 @@ module.exports = function () {
             file = obj.file;
 
             // 非图片
-            if (_.isImage(_.extname(file.path))) {
+            if (_.isImage(_.extname(file.path)) || file.cache.enable) {
                 obj.piped = true;
                 stream.push(file);
                 return;
@@ -90,7 +92,6 @@ module.exports = function () {
                 url = url.replace(/\\\'/ig, '');
                 info = _.uri(url, dirname, cwd);
                 obj = store.find(info.release);
-
                 if (obj && !obj.piped) {
                     embed(obj);
                 }
@@ -99,6 +100,7 @@ module.exports = function () {
                     switch (type) {
                         case 'embed':
                         case 'jsEmbed':
+
                             if (obj) {
                                 ret = obj.file.contents;
                                 if (!_.isText(info.rExtname)) {
@@ -114,6 +116,7 @@ module.exports = function () {
                                     }
                                 }
                             } else {
+                                console.log(file.contents.toString());
                                 message = 'unable to embed non-existent file [' + url + '] in [' + file.path + ']';
                             }
 
@@ -137,9 +140,10 @@ module.exports = function () {
                                 if (tmp) {
                                     var tfile = tmp.file;
 
-                                    adeps = adeps.concat(tfile.adeps, v);
+                                    adeps = adeps.concat(tfile.adeps);
 
                                 }
+                                adeps.push(v);
 
                             });
 
@@ -158,6 +162,7 @@ module.exports = function () {
             });
 
             file.contents = new Buffer(contents);
+
             obj.piped = true;
             stream.push(file);
         }
@@ -171,46 +176,78 @@ module.exports = function () {
                 return file.adeps;
             };
 
-            function recursion(file, map) {
-                var realpath = file.path,
-                    subpath = file.relative,
+            function recursion(file, isCache, map) {
+                var subpath = file.relative,
                     deps;
-
-                map = map || [];
-
-                if (file.deps) {
-                    deps = file.deps;
+                if (!isCache) {
+                    map = map || [];
+                    if (file.deps) {
+                        deps = file.deps;
+                    } else {
+                        return map;
+                    }
                 } else {
-                    return map;
-                }
+                    map = map || {};
+                    if (!_.isEmpty(file.cache.deps)) {
+                        deps = Object.keys(file.cache.deps);
 
-                for (var ci, info, rfile, len = deps.length, tmp, i = len - 1; ci = deps[i], i >= 0; i--) {
-                    info = _.uri(ci, cwd, cwd);
-                    tmp = store.find(info.release);
-                    if (tmp) {
-                        rfile = tmp.file;
-                        if (rfile && rfile.deps && rfile.deps.indexOf(ci) >= 0) {
-                            error('文件[' + subpath + ']和文件[' + ci + ']循环引用');
-                        }
-                        map.unshift(ci);
-                        if (_.isJs(_.extname(ci))) {
-                            recursion(rfile, map);
-                        }
+                    } else {
+                        return map;
                     }
                 }
 
-                for (var j = 0, ko = {}, cj; cj = map[j]; j++) {
-                    if (cj in ko) {
-                        map.splice(j, 1);
+                for (var ci, info, rfile, len = deps.length, tmp, i = len - 1; ci = deps[i], i >= 0; i--) {
+                    if (isCache) {
+                        info = _.uri(pth.relative(cwd, ci), cwd, cwd);
                     } else {
-                        ko[cj] = true;
+                        info = _.uri(ci, cwd, cwd);
+                    }
+
+                    tmp = store.find(info.release);
+
+                    if (tmp) {
+                        rfile = tmp.file;
+                        if (rfile) {
+                            if (!isCache) {
+                                if ((rfile.deps && rfile.deps.indexOf(ci) >= 0)) {
+                                    error('文件[' + subpath + ']和文件[' + ci + ']循环引用');
+                                }
+                            } else {
+
+                                if ((rfile.cache && ci in rfile.cache.deps)) {
+                                    error('文件[' + subpath + ']和文件[' + ci + ']循环引用');
+                                }
+                            }
+                        }
+                        if (!isCache) {
+                            map.unshift(ci);
+                            if (_.isJs(_.extname(ci))) {
+                                recursion(rfile, isCache, map);
+                            }
+                        } else {
+
+                            map = objectAssign(map, rfile.cache.deps);
+                            recursion(rfile, isCache, map);
+                        }
+                    }
+                }
+                if (!isCache) {
+                    for (var j = 0, ko = {}, cj; cj = map[j]; j++) {
+                        if (cj in ko) {
+                            map.splice(j, 1);
+                        } else {
+                            ko[cj] = true;
+                        }
                     }
                 }
 
                 return map;
 
             }
-            file.adeps = recursion(file);
+
+            file.adeps = recursion(file, false);
+            file.cache.addDeps(file.adeps || []);
+            file.cache.addDeps(recursion(file, true));
         }
 
         store.each(function (obj) {
@@ -222,6 +259,7 @@ module.exports = function () {
 
         // 清空
         store.clear();
+
         return cb();
     });
 };

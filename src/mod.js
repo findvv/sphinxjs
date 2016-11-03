@@ -8,22 +8,15 @@ var _ = require('./util.js');
 var lang = require('./lang.js');
 var config = require('./configure/config.js');
 
-function parser(file) {
-    var ret;
+function parser(file, cb) {
     var extname = _.extname(file.path);
 
     if (_.isJs(extname) && !_.isHtml(extname)) {
-        ret = parseJS(file);
+        parseJS(file, cb);
     }
 
     if (_.isHtml(extname)) {
-        ret = parseHtml(file);
-    }
-
-    if (ret) {
-        file.contents = new Buffer(ret.content);
-
-        file.deps = ret.deps;
+        parseHtml(file, cb);
     }
 }
 
@@ -34,63 +27,92 @@ function parseHtml(file) {
         contents,
         regExp = /<(script) .*?data-main.*?>([\s\S]*?)<\/\1>/mig;
 
-    contents = file.contents.toString();
+    if (file.cache && file.cache.enable) {
 
-    contents = contents.replace(regExp, function () {
-        var content = arguments[2],
-            nContent = lang.depsEmbed.wrap(file.path + count),
-            ret;
-
-        count++;
-
-        ret = m2c({
-            src: file.path,
-            based: file.cwd,
-            content: content,
-            isWrap: false
+        file.cache.getConfig(function (err, config) {
+            if (err) {
+                config = {};
+            }
+            file.deps = config.requires || [];
+            file.depsOrder = config.depsOrder || {};
         });
 
-        depsOrder[nContent] = ret.deps;
-        if (ret.content.replace(/[\s;,]/gm, '')) {
-            nContent += '\r<script' + ' type="text/javascript">\n' + ret.content + '\n</' + 'script>';
-        }
+    } else {
+        contents = file.contents.toString();
 
-        deps = deps.concat(ret.deps);
-        return nContent;
+        contents = contents.replace(regExp, function () {
+            var content = arguments[2],
+                nContent = lang.depsEmbed.wrap(file.path + count),
+                ret;
 
-    });
+            count++;
 
-    file.contents = new Buffer(contents);
-    file.deps = deps;
-    file.depsOrder = depsOrder;
+            ret = m2c({
+                src: file.path,
+                based: file.cwd,
+                content: content,
+                isWrap: false
+            });
+
+            depsOrder[nContent] = ret.deps;
+            if (ret.content.replace(/[\s;,]/gm, '')) {
+                nContent = nContent + ('\n<script' + ' type="text/javascript">\n' + ret.content + '\n</' + 'script>');
+            }
+
+            deps = deps.concat(ret.deps);
+            return nContent;
+
+        });
+        file.contents = new Buffer(contents);
+        file.deps = deps;
+        file.depsOrder = depsOrder;
+        file.cache.addModuleDeps(file.deps);
+        file.cache.depsOrder = depsOrder;
+
+    }
+
 }
 
-function parseJS(file) {
+function parseJS(file, cb) {
     var ret,
         contents,
         regExp = /\'use module\';/gim;
 
-    contents = file.contents.toString();
+    if (file.cache && file.cache.enable) {
+        file.cache.getConfig(function (err, config) {
 
-    if (!(regExp.test(contents))) {
-        return;
+            if (err) {
+                config = {};
+            }
+            file.deps = config.requires || [];
+        });
+
+    } else {
+        contents = file.contents.toString();
+
+        if (!(regExp.test(contents))) {
+
+            return;
+        }
+        ret = m2c({
+            src: file.path,
+            based: file.cwd,
+            content: contents.replace(regExp, ''),
+            isWrap: true,
+            ns: config.namespace,
+            map: config.alias || {}
+        });
+        if (ret) {
+            file.contents = new Buffer(ret.content);
+
+            file.deps = ret.deps;
+            file.cache.addModuleDeps(file.deps);
+        }
     }
-
-    ret = m2c({
-        src: file.path,
-        based: file.cwd,
-        content: contents.replace(regExp, ''),
-        isWrap: true,
-        ns: config.namespace,
-        map: config.alias || {}
-    });
-
-    return ret;
 }
 
 module.exports = function () {
     return through.obj(function (file, enc, cb) {
-
         if (file.isNull()) {
             this.push(file);
             return cb();
@@ -99,13 +121,13 @@ module.exports = function () {
         if (file.isBuffer()) {
             try {
                 parser(file);
+
             } catch (e) {
+
                 return cb(new gutil.PluginError('mod', e.message));
             }
         }
-
         this.push(file);
         return cb();
-
     });
 };

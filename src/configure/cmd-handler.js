@@ -10,8 +10,11 @@ function handler(task, argv) {
     try {
         gulp.parallel(task)(function (err) {
             if (err) {
+                console.log(err);
                 process.exit(1);
             }
         });
-    } catch (e) {};
+    } catch (e) {
+        console.log(e);
+    };
 };

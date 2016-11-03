@@ -30,7 +30,15 @@ function location(file, cb) {
                     } else {
                         ret = url;
                     }
-
+                    // if (info.exists) {
+                    //     file.cache.addDeps(info.realpath);
+                    // }
+                    break;
+                case 'embed':
+                case 'jsEmbed':
+                    if (info.exists) {
+                        file.cache.addDeps(info.realpath);
+                    }
                     break;
             }
         } catch (e) {
@@ -63,9 +71,9 @@ module.exports = function () {
             return cb();
         }
         if (file.isBuffer()) {
-
-            location(file, cb);
-
+            if (!file.cache.enable) {
+                location(file, cb);
+            }
             this.push(file);
 
             return cb();

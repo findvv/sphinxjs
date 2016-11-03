@@ -18,6 +18,8 @@ var ext = require('../ext');
 var cached = require('../cached');
 var mail = require('../mail');
 var ifElse = require('gulp-if-else');
+var getContents = require('../getContents.js');
+var writeCache = require('../writeCache.js');
 var location = require('../location.js');
 var mod = require('../mod.js');
 
@@ -55,36 +57,47 @@ Base.prototype = {
         var stream = mergeStream();
 
         // 读取文件
-        stream = this.src(stream);
+
+        stream = this.src(stream).pipe(getContents());
 
         if (this.conf.error) {
             stream = stream
-            .pipe(plumber({
-                errorHandler: notify.onError(function (error) {
-                    var message = '[' + error.plugin + ']',
-                        file, formatted;
+                .pipe(plumber({
+                    errorHandler: notify.onError(function (error) {
+                        var message = '[' + error.plugin + ']',
+                            file, formatted;
 
-                    if (error.name) {
-                        message += error.name + ':';
-                    }
+                        if (error.name) {
+                            message += error.name + ':';
+                        }
 
-                    formatted = error.messageFormatted || error.message;
+                        formatted = error.messageFormatted || error.message;
 
-                    message += ' "' + formatted + '" ';
+                        message += ' "' + formatted + '" ';
+                        if (file = (error.file || error.fileName)) {
+                            message += 'in [' + file + ']';
+                        }
 
-                    if (file = (error.file || error.fileName)) {
-                        message += 'in [' + file + ']';
-                    }
-
-                    mail.collectMessage(message);
-                    return message;
-                }.bind(this))
-            }));
+                        mail.collectMessage(message);
+                        return message;
+                    }.bind(this))
+                }));
         }
 
+        this.cacheFilter = filter(function (file) {
+            return !(file.cache && file.cache.enable);
+        }, {
+            restore: true
+        });
+
+        stream = stream.pipe(this.cacheFilter);
         // 编译
         stream = this.compile(stream);
-        stream = this.lang(stream);
+
+        stream = this.lang(stream).pipe((require('through2').obj(function (file, enc, cb) {
+
+            cb(null, file);
+        })));
         stream = this.postrelease(stream);
         // 拷贝副本
         if (this._optimize) {
@@ -95,7 +108,15 @@ Base.prototype = {
         // 优化压缩
         if (this._optimize) {
             // 恢复文件，并释放内存
-            stream = stream.pipe(copy.restore());
+            this.cacheFilter = filter(function (file) {
+                return !(file.cache && file.cache.enable);
+            }, {
+                restore: true
+            });
+            stream = stream
+                .pipe(copy.restore())
+                .pipe(getContents(this._optimize))
+                .pipe(this.cacheFilter);
 
             stream = this.optimize(stream);
             stream = this.lang(stream);
@@ -179,6 +200,7 @@ Base.prototype = {
         stream = stream
             .pipe(inline())
             .pipe(location())
+            .pipe(this.cacheFilter.restore)
             .pipe(mod())
             .pipe(embed());
         return stream;
@@ -216,6 +238,7 @@ Base.prototype = {
         }
 
         return stream
+            .pipe(writeCache())
             .pipe(cached())
             .pipe(gulp.dest(this._dest, {
                 cwd: this._cwd
@@ -336,6 +359,28 @@ Base.handler = {
 
         optimize: function (stream) {
             return stream;
+        }
+    },
+    m2c: {
+        filter: function (path) {
+            var extname = _.extname(path);
+
+            return _.isJs(extname) || _.isHtml(extname);
+        },
+        postrelease: function (stream) {
+
+            if (this.conf.mod) {
+                var m2c = require('../m2c');
+
+                return stream.pipe(m2c({
+                    root: this._cwd,
+                    ns: this._ns || 'sm',
+                    fileBasedRoot: true
+                }));
+            } else {
+                return stream;
+            }
+
         }
     }
 

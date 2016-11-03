@@ -144,6 +144,7 @@ function process(file) {
     }
 
     switch (util.extname(file.path)) {
+        case ext.tmpl:
         case ext.js:
             contents = execJs(contents);
             break;
@@ -171,7 +172,9 @@ module.exports = function () {
         }
 
         if (file.isBuffer()) {
-            process(file);
+            if (!file.cache.enable) {
+                process(file);
+            }
             this.push(file);
             return cb();
         }
