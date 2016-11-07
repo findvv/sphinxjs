@@ -10,7 +10,6 @@ var release = {
             describe: '使用glob配置要编译的文件',
             'default': '**'
         },
-
         dest: {
             alias: 'd',
             demand: false,
@@ -45,6 +44,11 @@ var release = {
             type: 'string',
             describe: '指定模块化编译时，全局namespace. 只在启用模块化时有效',
             'default': 'ns'
+        },
+        clean: {
+            type: 'boolean',
+            describe: '清除缓存',
+            alias: 'c'
         }
 
     },

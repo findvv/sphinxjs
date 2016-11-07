@@ -10,6 +10,7 @@ var fs = require('fs');
 var _ = require('../util.js');
 var mkdirp = require('mkdirp');
 var objectAssign = require('object-assign');
+var rimraf = require('rimraf');
 
 function homedir() {
     var env = process.env;
@@ -41,7 +42,7 @@ function md5(data, len) {
 }
 
 function getCacheDir(optimize) {
-    var homeDir = pth.join(home, '.sphinx-tmp');
+    var homeDir = pth.join(home, '.sphinx-tmp/cache');
 
     if (optimize) {
         homeDir = pth.join(homeDir, 'optimize');
@@ -68,7 +69,7 @@ function Cache(path, mtime, optimize) {
     this.depsOrder = {};
     this.requires = [];
     this.version = pkg.version;
-    //this.cacheFile = pth.join(cacheDir, basename + '-content-' + hash + '.tmp');
+    // this.cacheFile = pth.join(cacheDir, basename + '-content-' + hash + '.tmp');
     this.cacheInfo = pth.join(cacheDir, basename + '-config-' + hash + '.json');
     this.hasChange = false;
     this.enable = false;
@@ -240,4 +241,16 @@ Cache.prototype = {
         return this;
     }
 };
+Cache.getCacheDir = getCacheDir;
+Cache.clean = function (func) {
+    var dir = pth.resolve(getCacheDir(), '..');
+
+    if (typeof func !== 'function') {
+        rimraf.sync(dir);
+    } else {
+        rimraf(dir, func);
+    }
+
+};
+
 module.exports = Cache;

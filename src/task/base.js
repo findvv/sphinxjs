@@ -360,28 +360,6 @@ Base.handler = {
         optimize: function (stream) {
             return stream;
         }
-    },
-    m2c: {
-        filter: function (path) {
-            var extname = _.extname(path);
-
-            return _.isJs(extname) || _.isHtml(extname);
-        },
-        postrelease: function (stream) {
-
-            if (this.conf.mod) {
-                var m2c = require('../m2c');
-
-                return stream.pipe(m2c({
-                    root: this._cwd,
-                    ns: this._ns || 'sm',
-                    fileBasedRoot: true
-                }));
-            } else {
-                return stream;
-            }
-
-        }
     }
 
 };

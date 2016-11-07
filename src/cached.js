@@ -4,8 +4,6 @@ var crypto = require('crypto');
 var Store = require('./store.js');
 var cache = new Store;
 
-
-
 function md5(str) {
     return crypto
         .createHash('md5')
