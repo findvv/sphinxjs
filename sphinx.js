@@ -42,7 +42,7 @@ if (argv.version || argv.v) {
     showLogo();
 }
 
-if (argv.clean || argv.c) {
+if ((argv.clean || argv.c) && argv._.length == 0) {
 
     Cache.clean();
     process.exit(0);

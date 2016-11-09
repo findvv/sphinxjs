@@ -22,6 +22,7 @@ var getContents = require('../getContents.js');
 var writeCache = require('../writeCache.js');
 var location = require('../location.js');
 var mod = require('../mod.js');
+var tmpl = require('gulp-template');
 
 // 数组去重
 function unique(array) {
@@ -360,8 +361,25 @@ Base.handler = {
         optimize: function (stream) {
             return stream;
         }
-    }
+    },
+    tmpl: {
+        filter: function (path) {
+            var extname = _.extname(path);
 
+            return extname === ext.tmpl;
+        },
+
+        compile: function (stream) {
+            return stream
+                .pipe(tmpl.precompile({
+                    variable: 'obj'
+                }));
+        },
+
+        optimize: function (stream) {
+            return stream;
+        }
+    }
 };
 
 Base.prototype.constructor = Base;

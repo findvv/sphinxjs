@@ -108,6 +108,7 @@ module.exports = function () {
                                     ret = info.quote + _.base64(ret, info.rExtname) + info.quote;
                                 } else {
                                     // 文本文件必须 toString()
+
                                     ret = ret.toString();
                                     if (type === 'jsEmbed' &&
                                         !_.isJsLike(info.rExtname) &&
@@ -116,10 +117,10 @@ module.exports = function () {
                                     }
                                 }
                             } else {
-                                console.log(file.contents.toString());
+
                                 message = 'unable to embed non-existent file [' + url + '] in [' + file.path + ']';
                             }
-
+                           // ret = all;
                             break;
                         case 'depsEmbed':
                             var deps = [],

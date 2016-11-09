@@ -101,6 +101,10 @@ function execute(env, sln) {
     ]));
 
     gulp.task('server', gulp.series([
+        function (cb) {
+            config.error = true;
+            cb();
+        },
         'release',
         function (cb) {
             var opts = {
