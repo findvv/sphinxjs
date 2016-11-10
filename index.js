@@ -1,15 +1,14 @@
 'use strict';
 var gulp = require('./gulp');
 var gutil = require('gulp-util');
-var pth = require('path');
 var chalk = gutil.colors;
 var prettyTime = require('pretty-hrtime');
 var config = require('./src/configure/config.js');
 var ifElse = require('gulp-if-else');
-
 var bs;
 
-function execute(env, sln) {
+function execute(Solution) {
+
     gulp.on('start', function (e) {
         if (e.name === '<anonymous>') {
             return;
@@ -51,38 +50,35 @@ function execute(env, sln) {
 
     gulp.task('release', gulp.series([
         function (cb) {
-            config.load(env.configPath);
-            cb();
-        },
-        function (cb) {
-            var glob = config.glob,
-                Solution = sln,
-                globHandler = function () {
-                    var dest = config.dest,
-                        cwd = config.cwd,
+            var glob = config.glob;
 
-                        dGlob;
+            //     globHandler = function () {
+            //         var dest = config.dest,
+            //             cwd = config.cwd,
 
-                    dest = pth.resolve(cwd, dest);
-                    if (dest.indexOf(cwd) == 0) {
-                        dest = pth.relative(cwd, dest);
-                    } else {
-                        return;
-                    }
-                    dGlob = '!(' + dest + ')/**';
-                    if (Array.isArray(glob)) {
-                        if (glob.indexOf(dGlob) == -1) {
-                            glob.push(dGlob);
-                        }
-                    } else {
-                        glob = [glob, dGlob];
-                    }
-                    config.glob = glob;
+            //             dGlob;
 
-                };
+            //         dest = pth.resolve(cwd, dest);
+            //         if (dest.indexOf(cwd) == 0) {
+            //             dest = pth.relative(cwd, dest);
+            //         } else {
+            //             return;
+            //         }
+            //         dGlob = '!(' + dest + ')/**';
+            //         if (Array.isArray(glob)) {
+            //             if (glob.indexOf(dGlob) == -1) {
+            //                 glob.push(dGlob);
+            //             }
+            //         } else {
+            //             glob = [glob, dGlob];
+            //         }
+            //         config.glob = glob;
 
-            globHandler();
+            //     };
+
+            // globHandler();
             // Solution = plugin.loadSolution();
+
             return new Solution(glob, {
                 cwd: config.cwd,
                 dest: config.dest,
@@ -161,6 +157,8 @@ function execute(env, sln) {
             cb();
         }
     ]));
+
+    return gulp;
 }
 
 function formatError(e) {

@@ -86,7 +86,7 @@ Base.prototype = {
         }
 
         this.cacheFilter = filter(function (file) {
-            return !(file.cache && file.cache.enable);
+            return !(file.cache && file.cache.enable) && _.isText(_.extname(file.path));
         }, {
             restore: true
         });

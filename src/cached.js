@@ -2,7 +2,12 @@
 var through = require('through2');
 var crypto = require('crypto');
 var Store = require('./store.js');
+var config = require('./configure/config.js');
 var cache = new Store;
+var pth = require('path');
+var _ = require('./util.js');
+var gutil = require('gulp-util');
+var fs = require('fs');
 
 function md5(str) {
     return crypto
@@ -13,8 +18,10 @@ function md5(str) {
 
 module.exports = function () {
     return through.obj(function (file, enc, cb) {
-        var str,
-            key;
+        var dest = config.dest,
+            path,
+            optimize = config.optimize,
+            self = this;
 
         if (file.isNull()) {
             return cb();
@@ -36,11 +43,30 @@ module.exports = function () {
 
             if (!file.cache.enable) {
                 this.push(file);
+
             } else {
+                var extname = _.extname(file.path);
+
+                if (_.existsExtMap(extname)) {
+                    file.path = gutil.replaceExtension(file.path, _.getReleaseExt(extname));
+                }
+
+                path = pth.resolve(config.cwd, dest, file.relative);
+                if (optimize) {
+
+                    path = path.replace(extname, '.min' + extname);
+                }
+
+                fs.exists(path, function (flag) {
+                    if (!flag) {
+                        self.push(file);
+
+                    }
+                });
                 // todo 确定 有缓存但是输出目录没有的问题;
             }
-
             return cb();
+
         }
     }, function (cb) {
         return cb();

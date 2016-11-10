@@ -7,81 +7,72 @@
 var fs = require('fs');
 var pth = require('path');
 var _ = require('./util');
+var config = require('./configure/config.js');
 
-function buildScGlob(target, root, dest, lastRun) {
-    var contents;
-    var execHtml;
-    var lang;
-    var globs = [target];
-
-    target = pth.join(root, target);
-
-    if (!_.exists(target)) {
-        return '**';
-    }
-
-    execHtml = require('./inline').execHtml;
-    lang = require('./lang');
-
-    contents = fs.readFileSync(target, 'utf8');
-    contents = execHtml(contents);
-
-    contents.replace(lang.reg, function (all, type, depth, url, extra) {
-        var info,
-            subpath;
-
-        if (type === 'embed') {
-            info = _.uri(url, _.dirname(target), root);
-
-            if (info.extname === '.html' && info.dirname.indexOf(root) === 0) {
-                var dirname = info.dirname;
-
-                subpath = dirname.substring(root.length);
-                console.log(subpath);
-                globs.push(
-                    pth.join(subpath, '**')
-                    .replace(/^\//, '')
-                    .replace(/shortcuts/, '+(shortcuts)')
-                );
-
-                if (/\/hy_/.test(dirname)) {
-                    dirname = pth.resolve(dirname, '../common');
-                    subpath = dirname.substring(root.length);
-                    globs.push(
-                        pth.join(subpath, '**')
-                        .replace(/^\//, '')
-                        .replace(/shortcuts/, '+(shortcuts)')
-                    );
-                }
-
-                globs.push('+(symbol)/**');
-            }
-        }
-    });
-
-    function filter(pattern) {
-        var glob = require('glob');
-        var matches = glob.sync(pattern);
-
-        if (matches.length === 0) {
-            return false;
-        }
-        return !matches.every(function (file) {
-            return fs.lstatSync(file).mtime <= lastRun;
-        });
-    }
-
-    if (filter('+(js|tmpl)/**')) {
-        globs.push('+(js|tmpl)/**');
-    }
-
-    if (filter('+(css|img)/**')) {
-        globs.push('+(css|img)/**');
-    }
-
-    return globs;
-
+function isAllGlob(glob) {
+    return /^\*\*$/.test(glob) || /^\*\*\/\*\*$/.test(glob);
 }
-module.exports = {
-    buildScGlob: buildScGlob
-};
+
+function globFilter(dest) {
+    var globs = config.glob,
+        nGlobs = [],
+        isNeedForeachDir = false,
+        destDir,
+        destGlob;
+
+    if (dest) {
+        destDir = dest.split('/')[0];
+        destGlob = '!(' + destDir + ')/**';
+    }
+
+    if (!_.isArray(globs)) {
+        globs = [globs];
+    }
+
+    for (var i = 0, len = globs.length, gi; gi = globs[i], i < len; i++) {
+        if (!isAllGlob(gi)) {
+            nGlobs.push(gi);
+        } else {
+            isNeedForeachDir = true;
+        }
+    };
+
+    if (isNeedForeachDir) {
+        var files = fs.readdirSync(config.cwd);
+
+        files.forEach(function (name) {
+            if (destDir == name) {
+                return;
+            }
+
+            if (_.isDir(pth.resolve(config.cwd, name))) {
+                nGlobs.push(`+(${name})/**`);
+            }
+        });
+
+        nGlobs.push('**.**');
+    }
+    if (destGlob) {
+        nGlobs.push(destGlob);
+    }
+
+    return nGlobs;
+}
+
+function globHandler() {
+    var dest = config.dest || 'output',
+        cwd = config.cwd;
+
+    dest = pth.resolve(cwd, dest);
+
+    if (dest.indexOf(cwd) == 0) {
+        dest = pth.relative(cwd, dest);
+    } else {
+        dest = null;
+    }
+
+    config.glob = globFilter(dest);
+    config.dest = config.dest || 'output';
+}
+
+module.exports = globHandler;

@@ -68,6 +68,7 @@ function Cache(path, mtime, optimize) {
     this.deps = {};
     this.depsOrder = {};
     this.requires = [];
+    this.arequires = [];
     this.version = pkg.version;
     // this.cacheFile = pth.join(cacheDir, basename + '-content-' + hash + '.tmp');
     this.cacheInfo = pth.join(cacheDir, basename + '-config-' + hash + '.json');
@@ -88,6 +89,7 @@ Cache.prototype = {
             deps: this.deps,
             requires: this.requires,
             depsOrder: this.depsOrder,
+            arequires: this.arequires,
             version: this.version,
             contents: contents
         };
@@ -185,6 +187,7 @@ Cache.prototype = {
                             self.deps = deps;
                             self.contents = cacheInfo.contents;
                             self.requires = cacheInfo.requires;
+                            self.arequires = cacheInfo.arequires;
                             self.enable = true;
                             resolve(true);
                         }

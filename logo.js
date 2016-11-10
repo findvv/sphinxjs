@@ -1,49 +1,30 @@
 'use strict';
-var chalk = require('chalk');
-var pkg = require('./package.json');
+const chalk = require('chalk');
+const _ = require('./src/util.js');
 
-function showLogo(c, opts) {
-    var lines = [],
-        space,
-        prefix,
-        suffix,
-        bigfont = require('bigfont');
+module.exports = function (version) {
+    let lines = [],
+        B = _.isOSX() ? '▒' : '/';
 
-    opts = opts || {};
-    space = opts.lineStyle < 0 ? ' ' : '';
-    prefix = opts.prefix || '';
-    suffix = opts.suffix || '';
-
-    c.split('').forEach(function (text, index) {
-        var colorName = Array.isArray(opts.colors) && opts.colors[index],
-            color = colorName in chalk ? chalk[colorName] : chalk['cyan'],
-            temp = bigfont.lattice(text, opts);
-
-        temp.split(/\n/).forEach(function (text, index) {
-            if (!lines[index]) {
-                lines[index] = '';
-            }
-            if (text) {
-                lines[index] += space + color(text);
-            }
-        });
-    });
-    if (prefix || suffix) {
-        lines = lines.map(function (line) {
-            return prefix + line + suffix;
-        });
-    }
-    return lines.join('\n');
-}
-
-module.exports = function (logo) {
-    console.log('\n\r  v' + pkg.version + '\n');
-    console.log(showLogo(logo || 'SPHINX', {
-        space: '',
-        lineStyle: -1,
-        blockStyle: 2,
-        colors: ['red', 'yellow', 'red', 'green', 'red']
-    }));
+    lines.push(chalk.red(`  ${B}${B}${B}${B}  `) + chalk.yellow(`${B}${B}${B}${B}   `) + chalk.red(`${B}   ${B}   `) + chalk.green(`${B}${B}${B}  `) + chalk.cyan(`${B}   ${B}`));
+    lines.push(chalk.red(` ${B}      `) + chalk.yellow(`${B}   ${B}  `) + chalk.red(`${B}   ${B}   `) + chalk.green(` ${B}   `) + chalk.cyan(`${B}   ${B}`));
+    lines.push(chalk.red(` ${B}      `) + chalk.yellow(`${B}   ${B}  `) + chalk.red(`${B}   ${B}   `) + chalk.green(` ${B}   `) + chalk.cyan(` ${B} ${B} `));
+    lines.push(chalk.red(`  ${B}${B}${B}   `) + chalk.yellow(`${B}${B}${B}${B}   `) + chalk.red(`${B}${B}${B}${B}${B}   `) + chalk.green(` ${B}   `) + chalk.cyan(`  ${B}  `));
+    lines.push(chalk.red(`     ${B}  `) + chalk.yellow(`${B}      `) + chalk.red(`${B}   ${B}   `) + chalk.green(` ${B}   `) + chalk.cyan(` ${B} ${B} `));
+    lines.push(chalk.red(`     ${B}  `) + chalk.yellow(`${B}      `) + chalk.red(`${B}   ${B}   `) + chalk.green(` ${B}   `) + chalk.cyan(`${B}   ${B}`));
+    lines.push(chalk.red(` ${B}${B}${B}${B}   `) + chalk.yellow(`${B}      `) + chalk.red(`${B}   ${B}   `) + chalk.green(`${B}${B}${B}  `) + chalk.cyan(`${B}   ${B}`));
+    console.log('\n');
+    version && console.log(`v${version}\n`);
+    console.log(lines.join('\n'));
     console.log('\n');
     process.exit(0);
 };
+
+
+// ▒▒▒▒   ▒▒▒▒   ▒   ▒  ▒▒▒  ▒   ▒  ▒   ▒
+// ▒      ▒   ▒  ▒   ▒   ▒   ▒   ▒  ▒   ▒
+// ▒      ▒   ▒  ▒   ▒   ▒   ▒▒  ▒   ▒ ▒
+//  ▒▒▒   ▒▒▒▒   ▒▒▒▒▒   ▒   ▒ ▒ ▒    ▒
+//     ▒  ▒      ▒   ▒   ▒   ▒  ▒▒   ▒ ▒
+//     ▒  ▒      ▒   ▒   ▒   ▒   ▒  ▒   ▒
+// ▒▒▒▒   ▒      ▒   ▒  ▒▒▒  ▒   ▒  ▒   ▒

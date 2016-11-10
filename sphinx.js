@@ -1,24 +1,13 @@
 'use strict';
-
+var logo = require('./logo.js');
 var config = require('./src/configure/config.js');
-var Liftoff = require('liftoff');
-
-var showLogo = require('./logo.js');
-var argv = require('yargs-parser')(process.argv.slice(2));
-var objectAssign = require('object-assign-deep');
-var command = require('./src/configure/command.js');
-var plugin = require('./src/plugin.js');
+let initGulp = require('./index.js');
+let gulp = require('./gulp.js');
+let cli = require('./src/configure/command.js');
 var Cache = require('./src/cache/cache.js');
-
-var liftoff = new Liftoff({
-    name: 'sphinx',
-    configName: 'sphinx-conf',
-    extensions: {
-        '.js': null,
-        '.json': null
-    }
-});
-
+var Solution = require('./src/task/base.js');
+var plugin = require('./src/plugin.js');
+var glob = require('./src/glob.js');
 var sphinx = {
     config: config,
     Base: require('./src/task/base.js'),
@@ -27,6 +16,7 @@ var sphinx = {
     lang: require('./src/lang.js'),
     inline: require('./src/inline.js')
 };
+var sln;
 
 if (!global.sphinx) {
     Object.defineProperty(global, 'sphinx', {
@@ -37,43 +27,51 @@ if (!global.sphinx) {
     });
 }
 
-// 输出版本和logo
-if (argv.version || argv.v) {
-    showLogo();
+config.init(cli);
+
+sln = config.solution;
+
+if (sln) {
+    Solution = plugin.getSlnTask(sln) || Solution;
 }
 
-if ((argv.clean || argv.c) && argv._.length == 0) {
+glob();
 
+cli.registerHandler({
+    release: invoke,
+    server: invoke
+});
+try {
+    cli.create();
+} catch (e) {
+
+}
+
+// 输出版本和logo
+if (config.version) {
+    var pkg = require('./package.json');
+
+    logo(pkg.version);
+}
+
+if (config.clean && config._.length == 0) {
     Cache.clean();
     process.exit(0);
 }
 
-liftoff.launch({
-    cwd: argv.cwd,
-    configPath: argv.conf
-}, invoke);
+if (config._.length == 0) {
+    cli.yargs.showHelp();
+    process.exit(0);
+} else if (cli.getCommandNames().indexOf(config._[0]) < 0) {
+    // TODO
+}
 
-function invoke(env) {
-    var solution,
-        cmdConf = require('./src/configure/cmd-conf.js'),
-        slnCmdConf,
-        sln = require('./src/task/base.js'),
-        cli;
+if (config._.length == 0) {
+    cli.yargs.showHelp();
+    process.exit(0);
+}
 
-    // 加载配置文件
-
-    config.load(env.configPath, false);
-    solution = argv.s || argv.solution || config.solution;
-    if (solution) {
-        slnCmdConf = plugin.getSlnCmd(solution) || {};
-        config.mergeCmdConf(slnCmdConf);
-        cmdConf = objectAssign(cmdConf, slnCmdConf);
-        sln = plugin.getSlnTask(solution) || sln;
-    }
-    require('./index')(env, sln);
-    cli = command.createCLI(cmdConf);
-    config.mergeCliArgs(cli.argv);
-    if (cli.argv._.length == 0) {
-        cli.showHelp();
-    }
+function invoke(name) {
+    initGulp(Solution);
+    gulp.series(name)();
 }

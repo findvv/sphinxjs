@@ -3,6 +3,9 @@ var fs = require('fs');
 var path = require('path');
 var ext = require('./ext');
 var toString = Object.prototype.toString;
+let util = require('lodash');
+let pathISAbsolute = require('path-is-absolute');
+let os;
 var _ = module.exports = {};
 
 var TEXT_EXTS = [
@@ -86,6 +89,10 @@ _.getReleaseExt = function (ext) {
     rExt = EXT_MAP[ext];
 
     return rExt || ext;
+};
+
+_.existsExtMap = function (ext) {
+    return EXT_MAP[ext];
 };
 
 _.exists = fs.existsSync || path.existsSync;
@@ -285,9 +292,7 @@ _.mtime = function (path) {
     }
     return time;
 };
-_.isPlainObject = function (obj) {
-    return _.is(obj, 'object') && Object.getPrototypeOf(obj) == Object.prototype;
-};
+
 _.isEmpty = function (obj) {
 
     for (var key in obj) {
@@ -295,3 +300,15 @@ _.isEmpty = function (obj) {
     }
     return true;
 };
+_.isOSX = function () {
+    if (!os) {
+        os = require('os');
+    }
+    return os.type() === 'Darwin';
+};
+_.isAbsolute = function (path) {
+    return pathISAbsolute(path);
+};
+
+module.exports = Object.assign(_, util);
+

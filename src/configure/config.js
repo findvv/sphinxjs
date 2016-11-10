@@ -1,119 +1,113 @@
 'use strict';
+let _ = require('../util.js');
+let model = {};
+let log = require('gulp-util').log;
+let configure = {};
+let pth = require('path');
+// 用于存储使用过程中可能修改的某些参数
+let cache = {};
+let CLI;
+let yargsArgv;
+let cliArgv;
+let cliDefaultArgv;
+let lastLoadTime = 0;
 
-var gutil = require('gulp-util');
-var objectAssign = require('object-assign-deep');
-var config;
-var cmdConf = require('./cmd-conf.js');
-var _ = require('../util.js');
-var lastLoadTime = 0;
-var commandArgvs = {};
-var initConf = {
-    mail: {}
-};
-
-var cache = {};
-
-var model = {};
-
-Object.keys(cmdConf).forEach(function (key) {
-    initConf = objectAssign(initConf, cmdConf[key].options);
-});
-
-config = {
-    init: function (conf) {
-        initConf = conf;
-    },
-    load: function (path, missing) {
+let config = {
+    load(path) {
         var conf,
-            lastTime;
-
-        missing = _.is(missing, 'undefined') ? true : missing;
+            lastTime,
+            mtime;
 
         if (path) {
-            if (lastLoadTime >= (lastTime = _.mtime(path).getTime())) {
+            mtime = _.mtime(path);
+            lastTime = mtime != 0 ? mtime.getTime() : mtime;
+            if (lastLoadTime >= lastTime) {
                 return false;
             }
             try {
                 conf = require(path);
-
                 delete require.cache[path];
-                model = objectAssign(model, conf);
+                model = conf || {};
+                defineProperties(model);
                 cache = {};
-                defineProperties(conf);
                 lastLoadTime = lastTime;
+                configure = conf;
                 return true;
             } catch (e) {
-                gutil.log('Loading or Parsing the configuration file "' + path + '" is incorrect: ' + e.message);
+                log('Loading or Parsing the configuration file "' + path + '" is incorrect: ' + e.message);
                 return false;
             }
         } else {
-            missing && gutil.log('missing config file [sphinx-conf.js] or [sphinx-conf.json]');
+            log('missing config file [sphinx-conf.js] or [sphinx-conf.json]');
             return false;
         }
     },
-    mergeCliArgs: function (conf) {
+    init(cli) {
+        var path;
 
-        if (conf) {
-            commandArgvs = conf;
-            defineProperties(conf);
+        CLI = cli;
+        cliArgv = cli.getExistsCLIArgs();
+        cliDefaultArgv = cli.getDefaultCLIArgs();
+
+        defineProperties(cli.getAllArgs());
+
+        if (cliArgv.conf) {
+            path = cliArgv.conf;
+        } else if (cliArgv.cwd) {
+            path = pth.resolve(cliArgv.cwd, 'sphinx-conf.js');
+        } else {
+            path = pth.resolve(process.cwd(), 'sphinx-conf.js');
         }
+
+        this.load(path);
+
     },
-    mergeCmdConf: function (conf) {
-        var options = {};
+    mergeCLI(cli) {
 
-        if (conf) {
-            Object.keys(conf).forEach(function (key) {
-                if (conf[key].options) {
-                    objectAssign(options, conf[key].options);
-
-                }
-            });
-            mergeConf(options);
-        }
     }
 
 };
 
 function defineProperties(data) {
     Object.keys(data).forEach(function (key) {
+        if (key in config) {
+            return;
+        }
         defineProperty(key);
     });
 }
 
 function defineProperty(key) {
-
-    if (key in config) {
-        return;
-    }
     Object.defineProperty(config, key, {
         configurable: false,
         enumerable: false,
         get: function () {
-            return cache[key] || commandArgvs[key] || model[key];
+            var value;
+
+            if (key in cache) {
+                value = cache[key];
+                return value;
+            }
+
+            if (key in cliArgv) {
+                yargsArgv = yargsArgv || CLI.getArgs();
+
+                value = yargsArgv[key];
+            } else {
+                value = model[key];
+
+                if (_.isUndefined(value) && key in cliDefaultArgv) {
+                    value = cliDefaultArgv[key];
+                };
+            }
+
+            return value;
+
         },
         set: function (value) {
             cache[key] = value;
         }
     });
 }
-
-function mergeConf(conf) {
-    Object.keys(conf).forEach(function (key) {
-        var item = conf[key],
-            value;
-
-        // if ('inConfFile' in item && !item.inConfFile) {
-        //     return;
-        // }
-
-        if ('default' in item) {
-            value = item.default;
-        }
-        model[key] = value;
-        defineProperty(key);
-    });
-}
-
-mergeConf(initConf);
 
 module.exports = config;

@@ -34,6 +34,7 @@ function parseHtml(file) {
                 config = {};
             }
             file.deps = config.requires || [];
+            file.adeps = config.arequires || [];
             file.depsOrder = config.depsOrder || {};
         });
 

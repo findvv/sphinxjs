@@ -75,7 +75,7 @@ module.exports = function () {
             file = obj.file;
 
             // 非图片
-            if (_.isImage(_.extname(file.path)) || file.cache.enable) {
+            if (!_.isText(_.extname(file.path)) || file.cache.enable) {
                 obj.piped = true;
                 stream.push(file);
                 return;
@@ -248,6 +248,7 @@ module.exports = function () {
             }
 
             file.adeps = recursion(file, false);
+            file.cache.arequires = file.adeps;
             file.cache.addDeps(file.adeps || []);
             file.cache.addDeps(recursion(file, true));
         }
