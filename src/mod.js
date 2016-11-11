@@ -68,8 +68,8 @@ function parseHtml(file) {
         file.deps = deps;
         file.depsOrder = depsOrder;
         file.cache.addModuleDeps(file.deps);
+        file.cache.addDeps(file.deps);
         file.cache.depsOrder = depsOrder;
-
     }
 
 }
@@ -124,8 +124,8 @@ module.exports = function () {
                 parser(file);
 
             } catch (e) {
-
-                return cb(new gutil.PluginError('mod', e.message));
+                console.log(file.path);
+                return cb(new gutil.PluginError('mod', e));
             }
         }
         this.push(file);

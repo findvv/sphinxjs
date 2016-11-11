@@ -1,62 +1,30 @@
 'use strict';
 
 var pkg = require('../../package.json');
-var os = require('os');
-var home = typeof os.homedir == 'function' ? os.homedir() : homedir();
 var config = require('../configure/config');
 var pth = require('path');
-var crypto = require('crypto');
 var fs = require('fs');
 var _ = require('../util.js');
 var mkdirp = require('mkdirp');
 var objectAssign = require('object-assign');
 var rimraf = require('rimraf');
 
-function homedir() {
-    var env = process.env;
-    var home = env.HOME;
-    var user = env.LOGNAME || env.USER || env.LNAME || env.USERNAME;
-
-    if (process.platform === 'win32') {
-        return env.USERPROFILE || env.HOMEDRIVE + env.HOMEPATH || home || null;
-    }
-
-    if (process.platform === 'darwin') {
-        return home || (user ? '/Users/' + user : null);
-    }
-
-    if (process.platform === 'linux') {
-        return home || (process.getuid() === 0 ? '/root' : (user ? '/home/' + user : null));
-    }
-
-    return home || null;
-}
-
-function md5(data, len) {
-    var md5sum = crypto.createHash('md5'),
-        encoding = typeof data === 'string' ? 'utf8' : 'binary';
-
-    md5sum.update(data, encoding);
-    len = len || 7;
-    return md5sum.digest('hex').substring(0, len);
-}
-
 function getCacheDir(optimize) {
-    var homeDir = pth.join(home, '.sphinx-tmp/cache');
+    var cacheDir = pth.join(_.getCacheDir(), _.last(config.cwd.split(pth.sep)));
 
     if (optimize) {
-        homeDir = pth.join(homeDir, 'optimize');
+        cacheDir = pth.join(cacheDir, 'optimize');
     } else {
-        homeDir = pth.join(homeDir, 'release');
+        cacheDir = pth.join(cacheDir, 'release');
     }
-    mkdirp(homeDir);
-    return homeDir;
+    mkdirp(cacheDir);
+    return cacheDir;
 }
 
 function Cache(path, mtime, optimize) {
     var cacheDir = getCacheDir(optimize),
         basename = pth.basename(path),
-        hash = md5(path, 10);
+        hash = _.md5(path, 10);
 
     if (!mtime) {
         mtime = _.mtime(path);
@@ -70,21 +38,15 @@ function Cache(path, mtime, optimize) {
     this.requires = [];
     this.arequires = [];
     this.version = pkg.version;
-    // this.cacheFile = pth.join(cacheDir, basename + '-content-' + hash + '.tmp');
+    this.cacheFile = pth.join(cacheDir, basename + '-content-' + hash + '.tmp');
     this.cacheInfo = pth.join(cacheDir, basename + '-config-' + hash + '.json');
     this.hasChange = false;
     this.enable = false;
 }
 
 Cache.prototype = {
-    save: function (contents, onRead) {
-        var info;
-
-        if (this.enable) {
-            return onRead();
-        }
-
-        info = {
+    _getInfo: function (contents) {
+        var info = {
             timestamp: this.timestamp,
             deps: this.deps,
             requires: this.requires,
@@ -93,16 +55,40 @@ Cache.prototype = {
             version: this.version,
             contents: contents
         };
+
+        return info;
+    },
+    save: function (contents, onRead) {
+        var info;
+
+        if (this.enable) {
+            return onRead();
+        }
+
+        info = this._getInfo(contents);
+
+        mkdirp(pth.dirname(this.cacheInfo));
         this.setConfig(info).then(function () {
             onRead();
         }).catch(function (e) {
             onRead(e);
         });
-        // Promise.all([this.setContents(content), this.setConfig(info)]).then(function () {
+        // Promise.all([this.setContents(contents), this.setConfig(info)]).then(function () {
         //     onRead();
         // }).catch(function (e) {
         //     onRead(e);
         // });
+    },
+    saveSync: function (contents) {
+        var info;
+
+        if (this.enable) {
+            return;
+        }
+
+        info = this._getInfo(contents);
+        mkdirp(pth.dirname(this.cacheInfo));
+        fs.writeFileSync(this.cacheInfo, JSON.stringify(info));
     },
     _read: function (path, onRead) {
         fs.exists(path, function (err) {
@@ -173,31 +159,49 @@ Cache.prototype = {
                 if (err) {
                     resolve(false);
                 } else {
-                    if (cacheInfo.version == self.version && cacheInfo.timestamp == self.timestamp) {
-                        deps = cacheInfo.deps;
-                        var allValid = Object.keys(deps).every(function (f) {
-                            var mtime = _.mtime(f);
-
-                            return mtime != 0 && deps[f] == mtime.getTime();
-                        });
-
-                        if (!allValid) {
-                            resolve(false);
-                        } else {
-                            self.deps = deps;
-                            self.contents = cacheInfo.contents;
-                            self.requires = cacheInfo.requires;
-                            self.arequires = cacheInfo.arequires;
-                            self.enable = true;
-                            resolve(true);
-                        }
-                    } else {
-                        resolve(false);
-                    }
+                    resolve(self._revert(cacheInfo));
                 }
 
             });
         });
+    },
+    _revert: function (cacheInfo) {
+        var deps, self = this;
+
+        if (cacheInfo.version == self.version && cacheInfo.timestamp == self.timestamp) {
+            deps = cacheInfo.deps;
+            var allValid = Object.keys(deps).every(function (f) {
+                var mtime = _.mtime(f);
+
+                return mtime != 0 && deps[f] == mtime.getTime();
+            });
+
+            if (!allValid) {
+                return false;
+
+            } else {
+                self.deps = deps;
+                self.requires = cacheInfo.requires;
+                self.arequires = cacheInfo.arequires;
+                self.contents = cacheInfo.contents;
+                self.enable = true;
+                return true;
+            }
+        } else {
+            return false;
+        }
+
+    },
+    checkSync: function () {
+        var cacheInfo;
+
+        if (_.exists(this.cacheInfo)) {
+            cacheInfo = fs.readFileSync(this.cacheInfo);
+            this.config = JSON.parse(cacheInfo.toString());
+            return this._revert(cacheInfo);
+        } else {
+            return false;
+        }
     },
     addDeps: function (path) {
         var mtime, self = this;
@@ -242,16 +246,36 @@ Cache.prototype = {
         }
 
         return this;
+    },
+    mergeDeps: function (cache) {
+        var deps = {};
+
+        if (cache instanceof Cache) {
+            deps = cache.deps;
+        } else if (typeof cache === 'object') {
+            deps = cache;
+        } else {
+            throw new Error('unable to merge deps of data [' + cache + ']');
+        }
+
+        this.deps = objectAssign(this.deps, deps);
+
     }
 };
-Cache.getCacheDir = getCacheDir;
 Cache.clean = function (func) {
-    var dir = pth.resolve(getCacheDir(), '..');
+    var release = getCacheDir(),
+        optimize = getCacheDir(true);
 
     if (typeof func !== 'function') {
-        rimraf.sync(dir);
+        rimraf.sync(release);
+        rimraf.sync(optimize);
     } else {
-        rimraf(dir, func);
+        rimraf(release, function () {
+            rimraf(optimize, function () {
+                _.isFunction(func) && func();
+            });
+        });
+
     }
 
 };

@@ -14,12 +14,22 @@ var crypto = require('crypto');
 var pathIsAbsolute = require('path-is-absolute');
 var DEFAULTNAMESPACE = 'sm';
 var src;
+var dirname;
 var map = {};
 
 function error(message) {
     throw new Error(message + 'in [' + src + ']');
 }
 var util = {
+    uri: function (url, dirname, cwd) {
+        var realpath = pth.resolve(dirname, url),
+            subpath = pth.relative(cwd, realpath);
+
+        return {
+            realpath: realpath,
+            subpath: subpath
+        };
+    },
     md5: function (data, len) {
         var md5sum = crypto.createHash('md5'),
             encoding = typeof data === 'string' ? 'utf8' : 'binary';
@@ -130,7 +140,7 @@ var util = {
         return isFlag;
     },
     requireArgHandle: function (argv, based, isCheckFileExists) {
-        var requireArgv, relative, item, _export;
+        var requireArgv, relative, item, _export, info;
 
         // require 没有参数
         if (argv.length == 0) {
@@ -151,10 +161,13 @@ var util = {
 
                 if ('exports' in item) {
                     _export = item.exports;
-                    this.checkFileExists(requireArgv, based, isCheckFileExists);
+
+                    info = this.uri(requireArgv, dirname, based);
+
+                    this.checkFileExists(info.realpath, isCheckFileExists);
 
                     return {
-                        path: pth.relative(based, requireArgv),
+                        path: info.subpath,
                         exports: _export,
                         usemap: true,
                         deps: item.deps || []
@@ -169,19 +182,18 @@ var util = {
             }
         }
 
-        this.checkFileExists(requireArgv, based, isCheckFileExists);
-        relative = pth.relative(based, requireArgv);
+        info = this.uri(requireArgv, dirname, based);
+
+        this.checkFileExists(info.realpath, isCheckFileExists);
 
         return {
-            path: relative,
-            exports: util.buildId(pth.resolve(based, relative)),
+            path: info.subpath,
+            exports: util.buildId(info.realpath),
             usemap: false,
             deps: []
         };
     },
-    checkFileExists: function (path, based, isCheckFileExists) {
-        var absPath = pth.resolve(based, path);
-
+    checkFileExists: function (absPath, isCheckFileExists) {
         if (isCheckFileExists && !fs.existsSync(absPath)) {
             error('unable to find file: ' + absPath);
         }
@@ -239,8 +251,9 @@ module.exports = function (opts) {
     }
     src = opts.src;
     map = opts.map || {};
+    dirname = pth.dirname(src);
     compress = opts.compress;
-    based = opts.based || pth.dirname(src);
+    based = opts.based || process.cwd();
     content = opts.content;
     ns = opts.ns || DEFAULTNAMESPACE;
 

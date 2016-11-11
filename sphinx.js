@@ -8,6 +8,7 @@ var Cache = require('./src/cache/cache.js');
 var Solution = require('./src/task/base.js');
 var plugin = require('./src/plugin.js');
 var glob = require('./src/glob.js');
+var gutil = require('gulp-util');
 var sphinx = {
     config: config,
     Base: require('./src/task/base.js'),
@@ -56,6 +57,7 @@ if (config.version) {
 
 if (config.clean && config._.length == 0) {
     Cache.clean();
+    gutil.log('\'' + gutil.colors.cyan('Cache') + '\' cleaned');
     process.exit(0);
 }
 
@@ -72,6 +74,14 @@ if (config._.length == 0) {
 }
 
 function invoke(name) {
+    if (config.clean) {
+        gutil.log('Cleaning', '\'' + gutil.colors.cyan('Cache') + '\'...');
+        Cache.clean();
+    }
     initGulp(Solution);
     gulp.series(name)();
 }
+
+
+
+

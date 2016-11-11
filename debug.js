@@ -104,3 +104,43 @@
 //     return fs.createReadStream('./changelog.md');
 // }).pipe(stripBomStream());
 // console.log(t.contents.toString());
+
+var store = {
+    a: ['b', 'c', 'd'],
+    b: ['x', 'y', 'z'],
+    d: ['z', 'i', 'o']
+};
+
+
+function getAllDeps(deps, tdeps) {
+    var adeps = [];
+
+    deps.forEach(function (v) {
+
+        var tmp = store[v];
+
+        if (tmp) {
+            if (tmp.indexOf(v) >= 0) {
+                throw 'xx';
+            }
+
+            var xdeps = getAllDeps(tmp);
+
+            if (xdeps.indexOf(v) >= 0) {
+                throw 'yy';
+            }
+
+            adeps = adeps.concat(xdeps);
+
+            console.log(v + '  ' + xdeps);
+        }
+
+        adeps.push(v);
+
+    });
+    return adeps;
+}
+
+console.log(getAllDeps(store['a']));
+
+

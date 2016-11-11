@@ -6,7 +6,7 @@ var yargs = require('yargs'),
 
 let release = {
     describe: '编译发布项目',
-    aliases: ['run', 'r'],
+    aliases: ['r'],
     options: {
         glob: {
             alias: 'g',
@@ -31,11 +31,6 @@ let release = {
             type: 'string',
             describe: '指定配置文件的路径',
         },
-        solution: {
-            alias: 's',
-            type: 'string',
-            describe: '指定使用的解决方案'
-        },
         cwd: {
             type: 'string',
             describe: '指定要编译项目的路径',
@@ -45,15 +40,15 @@ let release = {
             type: 'boolean',
             describe: '清除缓存',
             alias: 'c'
-        },
-        domains: {
-            type: 'boolean',
-            describe: '为资源添加域名'
-        },
-        md5: {
-            type: 'boolean',
-            describe: '文件自动加md5戳'
         }
+        // domains: {
+        //     type: 'boolean',
+        //     describe: '为资源添加域名'
+        // },
+        // md5: {
+        //     type: 'boolean',
+        //     describe: '文件自动加md5戳'
+        // }
 
     },
     handler: function () {
@@ -76,7 +71,8 @@ server.options = Object.assign({
         alias: 'L',
         type: 'boolean',
         demand: false,
-        describe: '启用livereload，自动刷新浏览器'
+        describe: '启用livereload，自动刷新浏览器',
+        'default': true
     },
     qrcode: {
         type: 'boolean',

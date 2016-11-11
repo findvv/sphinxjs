@@ -2,8 +2,11 @@
 let _ = require('../util.js');
 let model = {};
 let log = require('gulp-util').log;
+let fs = require('fs');
 let configure = {};
 let pth = require('path');
+var mkdirp = require('mkdirp');
+
 // 用于存储使用过程中可能修改的某些参数
 let cache = {};
 let CLI;
@@ -12,11 +15,12 @@ let cliArgv;
 let cliDefaultArgv;
 let lastLoadTime = 0;
 
-let config = {
+var config = {
     load(path) {
         var conf,
             lastTime,
-            mtime;
+            mtime,
+            fileCache;
 
         if (path) {
             mtime = _.mtime(path);
@@ -25,15 +29,25 @@ let config = {
                 return false;
             }
             try {
+                var fileCacheObj = configFileCache();
+
+                fileCache = fileCacheObj.getContents();
                 conf = require(path);
                 delete require.cache[path];
                 model = conf || {};
+                if (fileCache.mtime != lastTime) {
+                    if (fileCache && Number(fileCache.notEmbedSymbol) != Number(model.notEmbedSymbol)) {
+                        require('../cache/cache.js').clean();
+                    }
+                    fileCacheObj.setContents(model, lastTime);
+                }
                 defineProperties(model);
                 cache = {};
                 lastLoadTime = lastTime;
                 configure = conf;
                 return true;
             } catch (e) {
+
                 log('Loading or Parsing the configuration file "' + path + '" is incorrect: ' + e.message);
                 return false;
             }
@@ -58,7 +72,6 @@ let config = {
         } else {
             path = pth.resolve(process.cwd(), 'sphinx-conf.js');
         }
-
         this.load(path);
 
     },
@@ -100,7 +113,6 @@ function defineProperty(key) {
                     value = cliDefaultArgv[key];
                 };
             }
-
             return value;
 
         },
@@ -110,4 +122,30 @@ function defineProperty(key) {
     });
 }
 
+function configFileCache() {
+    var cacheDir = pth.join(_.getCacheDir(), _.last(config.cwd.split(pth.sep)));
+    var cachePath = pth.join(cacheDir, 'sphinx-conf.json');
+    var content;
+    mkdirp(cacheDir);
+    return {
+        getContents: function () {
+            if (_.exists(cachePath)) {
+                content = fs.readFileSync(cachePath);
+
+                return JSON.parse(content);
+            } else {
+                return {};
+            }
+        },
+        setContents: function (content, mtime) {
+            mkdirp(cacheDir);
+
+            fs.writeFileSync(cachePath, JSON.stringify({
+                mtime: mtime,
+                content: content
+            }));
+        }
+    };
+
+}
 module.exports = config;

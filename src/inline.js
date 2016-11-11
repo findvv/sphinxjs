@@ -3,9 +3,14 @@ var through = require('through2');
 var ext = require('./ext');
 var util = require('./util');
 var lang = require('./lang');
+var config = require('./configure/config.js');
 
 function isInline(url) {
     return /[?&]__inline(?:[=&'"]|$)/.test(url);
+}
+
+function isSymbol(url) {
+    return /\.symbol[?&]__inline(?:[=&'"]|$)/.test(url);
 }
 
 function execJs(contents) {
@@ -100,16 +105,29 @@ function execHtml(contents) {
                 }
 
                 m = m.replace(/(\shref\s*=\s*)('[^']+'|"[^"]+"|[^\s\/>]+)/ig, function (_, prefix, url) {
+
                     if ((isCssLink || isImportLink) && isInline(url)) {
-                        if (isCssLink) {
-                            inline += '<style' + m.substring(5).replace(/\/(?=>$)/, '').replace(/\s+(?:charset|href|data-href|hreflang|rel|rev|sizes|target)\s*=\s*(?:'[^']+'|"[^"]+"|[^\s\/>]+)/ig, '');
-                        }
-                        inline += lang.embed.wrap(url);
-                        if (isCssLink) {
-                            inline += '</style>';
+
+                        // 临时解决中间模板的问题（最终方案讨论中）
+                        if (isSymbol(url)) {
+                            if (!config.notEmbedSymbol) {
+                                inline += lang.embed.wrap(url);
+                            } else {
+                                return _;
+                            }
+                        } else {
+                            if (isCssLink) {
+                                inline += '<style' + m.substring(5).replace(/\/(?=>$)/, '').replace(/\s+(?:charset|href|data-href|hreflang|rel|rev|sizes|target)\s*=\s*(?:'[^']+'|"[^"]+"|[^\s\/>]+)/ig, '');
+                            }
+                            inline += lang.embed.wrap(url);
+
+                            if (isCssLink) {
+                                inline += '</style>';
+                            }
+
+                            return '';
                         }
 
-                        return '';
                     } else {
                         return prefix + lang.uri.wrap(url);
                     }

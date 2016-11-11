@@ -88,7 +88,7 @@ function execute(Solution) {
                     // es6: config.get('es6')
             })
             .stream
-            .pipe(ifElse(bs && config.livereload, function () {
+            .pipe(ifElse(bs && config.live, function () {
                 return bs.stream({
                     match: '**/*.*'
                 });

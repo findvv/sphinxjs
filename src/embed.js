@@ -7,6 +7,7 @@ var config = require('./configure/config');
 var objectAssign = require('object-assign');
 var store = new Store;
 var pth = require('path');
+var gutil = require('gulp-util');
 
 var dTmpl = {
     js: '<script type="text/javascript" src="{0}"></script>',
@@ -21,18 +22,30 @@ function buildTag(deps) {
     deps = deps || [];
 
     deps.forEach(function (v) {
+
         if (existsDep.indexOf(v) == -1) {
             var extname = _.extname(v),
-                ext = extname.replace('.', '');
+                rExt = _.getReleaseExt(extname),
+                ext = rExt.replace('.', ''),
+                nPath = gutil.replaceExtension(v, rExt);
 
             if (_.isJs(extname) || _.isCss(extname)) {
-                ret += tmpl[ext].replace(/\{\d{1}\}/, '/' + v) + '\r';
+                ret += tmpl[ext].replace(/\{\d{1}\}/, '/' + nPath) + '\r';
                 existsDep.push(v);
             }
         }
     });
 
     return ret;
+}
+
+function addCacheDeps(a, b) {
+    if (a && a.cache && b) {
+        if (b.cache) {
+            a.cache.mergeDeps(b.cache);
+        }
+        a.cache.addDeps(b.path || b);
+    }
 }
 
 module.exports = function () {
@@ -98,11 +111,28 @@ module.exports = function () {
 
                 try {
                     switch (type) {
+                        case 'uri':
+                            if (info.url && info.exists) {
+                                ret = info.quote + info.url + info.quote;
+                            } else {
+                                ret = url;
+                            }
+                            break;
+                        case 'require':
+                            if (info.id && info.exists) {
+                                ret = info.quote + info.id + info.quote;
+                            } else {
+                                ret = url;
+                            }
+                            break;
                         case 'embed':
                         case 'jsEmbed':
 
                             if (obj) {
                                 ret = obj.file.contents;
+
+                                addCacheDeps(file, obj.file);
+
                                 if (!_.isText(info.rExtname)) {
                                     // 非文本文件 buffer
                                     ret = info.quote + _.base64(ret, info.rExtname) + info.quote;
@@ -133,20 +163,8 @@ module.exports = function () {
                             }
 
                             deps = file.depsOrder[all] || [];
-
-                            deps.forEach(function (v) {
-                                var uriInfo = _.uri(v, cwd, cwd),
-                                    tmp = store.find(uriInfo.release);
-
-                                if (tmp) {
-                                    var tfile = tmp.file;
-
-                                    adeps = adeps.concat(tfile.adeps);
-
-                                }
-                                adeps.push(v);
-
-                            });
+                            // console.log(deps);
+                            adeps = getAllDeps(deps, file);
 
                             ret = buildTag(adeps) || '';
                             break;
@@ -166,6 +184,52 @@ module.exports = function () {
 
             obj.piped = true;
             stream.push(file);
+        }
+
+        function getAllDeps(deps, file) {
+            var adeps = [],
+                cwd = config.cwd;
+
+            deps.forEach(function (v) {
+                var uriInfo = _.uri(v, cwd, cwd),
+
+                    tmp = store.find(uriInfo.release),
+
+                    cacheAdeps,
+
+                    tFile;
+
+                // console.log(v);
+
+                if (tmp) {
+                    tFile = tmp.file;
+                    // console.log('____________');
+                    // console.log(tFile.cache.arequires);
+                    cacheAdeps = tFile.cache.arequires;
+                    if (cacheAdeps.length == 0) {
+                        if (tFile.dStatus) {
+                            throw new Error(tFile.path + '和' + file.path + '存在循环依赖');
+                        }
+
+                        tFile.dStatus = 1;
+
+                        var xdeps = getAllDeps(tFile.deps || [], tFile);
+
+                        adeps = adeps.concat(xdeps);
+
+                        tFile.dStatus = 0;
+                    } else {
+                        adeps = adeps.concat(cacheAdeps);
+                    }
+                }
+
+                adeps.push(v);
+            });
+
+            file.adeps = _.uniq(adeps);
+            file.cache.arequires = file.adeps;
+            file.cache.addDeps(file.adeps || []);
+            return adeps;
         }
 
         function analysis(obj) {
@@ -253,9 +317,9 @@ module.exports = function () {
             file.cache.addDeps(recursion(file, true));
         }
 
-        store.each(function (obj) {
-            analysis(obj);
-        });
+        // store.each(function (obj) {
+        //     analysis(obj);
+        // });
         store.each(function (obj) {
             embed(obj);
         });

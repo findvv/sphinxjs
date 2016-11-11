@@ -5,8 +5,9 @@ var ext = require('./ext');
 var toString = Object.prototype.toString;
 let util = require('lodash');
 let pathISAbsolute = require('path-is-absolute');
-let os;
+let os = require('os');
 var _ = module.exports = {};
+var crypto = require('crypto');
 
 var TEXT_EXTS = [
     ext.js,
@@ -20,6 +21,9 @@ var TEXT_EXTS = [
     ext.json,
     // todo 此处应该可以配置
     // symbol 设置为文本文件
+    ext.symbol
+];
+var SYMBOL_EXTS = [
     ext.symbol
 ];
 
@@ -131,7 +135,9 @@ _.isJsLike = function (extname) {
 _.isJson = function (extname) {
     return JSON_EXTS.indexOf(extname) > -1;
 };
-
+_.isSymbol = function (extname) {
+    return SYMBOL_EXTS.indexOf(extname) > -1;
+};
 _.isHtml = function (extname) {
     return HTML_EXTS.indexOf(extname) > -1;
 };
@@ -308,6 +314,41 @@ _.isOSX = function () {
 };
 _.isAbsolute = function (path) {
     return pathISAbsolute(path);
+};
+_.homedir = function () {
+    var env = process.env;
+    var home = env.HOME;
+    var user = env.LOGNAME || env.USER || env.LNAME || env.USERNAME;
+
+    if (process.platform === 'win32') {
+        return env.USERPROFILE || env.HOMEDRIVE + env.HOMEPATH || home || null;
+    }
+
+    if (process.platform === 'darwin') {
+        return home || (user ? '/Users/' + user : null);
+    }
+
+    if (process.platform === 'linux') {
+        return home || (process.getuid() === 0 ? '/root' : (user ? '/home/' + user : null));
+    }
+
+    return home || null;
+};
+
+_.md5 = function (data, len) {
+    var md5sum = crypto.createHash('md5'),
+        encoding = typeof data === 'string' ? 'utf8' : 'binary';
+
+    md5sum.update(data, encoding);
+    len = len || 7;
+    return md5sum.digest('hex').substring(0, len);
+};
+
+_.getCacheDir = function () {
+    var home = _.homedir(),
+        homeDir = path.join(home, '.sphinx-tmp/cache');
+
+    return homeDir;
 };
 
 module.exports = Object.assign(_, util);

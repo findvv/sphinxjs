@@ -36,9 +36,9 @@ function location(file, cb) {
                     break;
                 case 'embed':
                 case 'jsEmbed':
-                    if (info.exists) {
-                        file.cache.addDeps(info.realpath);
-                    }
+                    // if (info.exists) {
+                    //     file.cache.addDeps(info.realpath);
+                    // }
                     break;
             }
         } catch (e) {
