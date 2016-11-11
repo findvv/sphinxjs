@@ -201,7 +201,6 @@ Base.prototype = {
         stream = stream
             .pipe(mod())
             .pipe(inline())
-            //.pipe(location())
             .pipe(this.cacheFilter.restore)
             .pipe(embed());
         return stream;

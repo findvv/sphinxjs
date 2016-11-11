@@ -8,7 +8,7 @@ function readFile(file, onRead) {
 
     file.cache.check().then(function (flag) {
         if (flag) {
-            //file.cache.getContents(onRead);
+            // file.cache.getContents(onRead);
 
             onReadFile(null, new Buffer(file.cache.contents));
             // file.cache.getContents(onReadFile);

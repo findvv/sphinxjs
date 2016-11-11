@@ -126,6 +126,7 @@ function configFileCache() {
     var cacheDir = pth.join(_.getCacheDir(), _.last(config.cwd.split(pth.sep)));
     var cachePath = pth.join(cacheDir, 'sphinx-conf.json');
     var content;
+
     mkdirp(cacheDir);
     return {
         getContents: function () {
