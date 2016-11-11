@@ -115,7 +115,7 @@ function execute(Solution) {
                                 res.setHeader('Pragma', 'no-cache');
                                 next();
                             },
-                            require('nunjucks-component-extension-middleware')(require('path').join(config.cwd, config.dest))
+                            require('nunjucks-component-extension-middleware')(require('path').resolve(config.cwd, config.dest))
                         ]
                     },
                     logPrefix: 'SPHINX SERVER'
