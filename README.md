@@ -23,24 +23,20 @@ Usage: sphinx <command>
 
 release [options]
   --glob, -g      [array]   使用glob配置要编译的文件
-  --mod, -m       [boolean] 启用模块化，编译使用COMMONJS规范的JS
   --dest, -d      [string]  编译输出目录
   --optimize, -o  [boolean] 启用压缩
-  --solution, -s  [string]  指定使用的解决方案
   --conf          [string]  指定配置文件的路径
   --cwd           [string]  指定要编译项目的路径
   --namespace     [string]  指定模块化编译时，全局namespace. 只在启用模块化时有效
 
 server [options]
-  --livereload, -L  [boolean]   启用livereload，自动刷新浏览器
+  --live, -L  [boolean]   启用livereload，自动刷新浏览器
   --qrcode          [boolean]   生成URL二维码
   --startpath       [string]    指定打开浏览器时的相对路径
   --port, -p        [number]    web server的端口
   --glob, -g        [array] 使用glob配置要编译的文件
-  --mod, -m         [boolean]   启用模块化，编译使用COMMONJS规范的JS
   --dest, -d        [string]    编译输出目录
   --optimize, -o    [boolean]   启用压缩
-  --solution, -s    [string]    指定使用的解决方案
   --conf            [string]    指定配置文件的路径
   --cwd             [string]    指定要编译项目的路径
   --namespace       [string]    指定模块化编译时，全局namespace.

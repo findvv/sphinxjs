@@ -8,10 +8,9 @@ function readFile(file, onRead) {
 
     file.cache.check().then(function (flag) {
         if (flag) {
-            // file.cache.getContents(onRead);
 
-            onReadFile(null, new Buffer(file.cache.contents));
-            // file.cache.getContents(onReadFile);
+            // onReadFile(null, file.cache.contents);
+            file.cache.getContents(onReadFile);
         } else {
             if (file.isNull()) {
                 fs.readFile(file.path, onReadFile);
@@ -26,7 +25,12 @@ function readFile(file, onRead) {
             return onRead(readErr);
         }
         // console.log(data.toString());
-        file.contents = data;
+        if (Buffer.isBuffer(data)) {
+            file.contents = data;
+        } else {
+            file.contents = new Buffer(data);
+        }
+
         onRead();
     }
 }
