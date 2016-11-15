@@ -104,3 +104,149 @@
 //     return fs.createReadStream('./changelog.md');
 // }).pipe(stripBomStream());
 // console.log(t.contents.toString());
+
+var glob = require('glob');
+var fs = require('fs');
+var prettyTime = require('pretty-hrtime');
+
+var _ = require('./debug-fis.js');
+// var t = process.hrtime();
+
+// glob('/Users/gml/sm/sc/**', function (err, files) {
+//     // console.log('glob' + prettyTime(process.hrtime(t)));
+//     // console.log(files.length);
+//     // var t = process.hrtime();
+//     var promises = [];
+//     files.forEach(function (k) {
+
+//         promises.push(syncRead(k));
+//     });
+//     Promise.all(promises).then(function () {
+//         console.log('glob' + prettyTime(process.hrtime(t)));
+
+//     });
+// });
+// var t1 = process.hrtime();
+// glob('/Users/gml/sm/sc/**', function (err, files) {
+
+
+//     var promises = [];
+//     files.forEach(function (k) {
+//         promises.push(read(k));
+
+//     });
+
+//     Promise.all(promises).then(function () {
+//         console.log(prettyTime(process.hrtime(t1)));
+
+//     });
+// });
+// var promises = [];
+// var t2 = Date.now();
+// _.find('/Users/gml/sm/sc', null, null, '/Users/gml/sm/sc').forEach(function (file) {
+
+
+
+//     promises.push(syncRead(file));
+
+
+
+// });
+// Promise.all(promises).then(function () {
+//     console.log('sync' + (Date.now() - t2));
+
+// });
+
+// var promises1= [];
+// var t3 = Date.now();
+// _.find('/Users/gml/sm/sc', null, null, '/Users/gml/sm/sc').forEach(function (file) {
+
+
+
+//     promises1.push(read(file));
+
+
+
+// });
+// Promise.all(promises1).then(function () {
+//     console.log('async' + (Date.now() - t3));
+
+// });
+//
+// console.log(_.glob('+(img)/**'));
+
+var minimatch = require('minimatch');
+var regexp = minimatch.makeRe('(img)/*', {
+      matchBase: true,
+      nocase: true
+    });
+
+
+console.log(regexp.source);
+console.log(regexp.test('a/img/loading.png'));
+
+// function syncRead(path) {
+//     return new Promise(function (resolve, reject) {
+//         if (fs.statSync(path).isFile()) {
+//             fs.readFileSync(path);
+
+//         }
+//         resolve();
+//     })
+
+// };
+
+// function read(path) {
+
+//     return new Promise(function (resolve, reject) {
+//         fs.stat(path, function (err, stat) {
+//             if (stat.isFile()) {
+//                 fs.readFile(path, function (err, data) {
+//                     resolve(err);
+//                 })
+//             } else {
+//                 resolve();
+//             }
+//         })
+
+//     })
+
+// }
+//
+//
+//
+
+var through = require('through2');
+
+
+function create(options) {
+    var stream = through.obj();
+
+    return stream;
+}
+
+var stream = create();
+var count = 2;
+
+
+var t = setInterval(function () {
+    stream.write({
+        path: 'x' + count
+    });
+    count++;
+
+    if (count == 10) {
+        stream.end();
+        clearInterval(t);
+    }
+
+},1000);
+
+stream.pipe(through.obj(function(obj, enc, cb) {
+    console.log(obj);
+    this.push(obj);
+    cb();
+}));
+
+
+

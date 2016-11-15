@@ -134,6 +134,7 @@ module.exports = function () {
                                 addCacheDeps(file, obj.file);
 
                                 if (!_.isText(info.rExtname)) {
+                                    console.log(info.rExtname);
                                     // 非文本文件 buffer
                                     ret = info.quote + _.base64(ret, info.rExtname) + info.quote;
                                 } else {
