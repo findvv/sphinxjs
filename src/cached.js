@@ -43,6 +43,7 @@ module.exports = function () {
 
             if (!file.cache.enable) {
                 this.push(file);
+                return cb();
 
             } else {
                 var extname = _.extname(file.path);
@@ -60,12 +61,11 @@ module.exports = function () {
                 fs.exists(path, function (flag) {
                     if (!flag) {
                         self.push(file);
-
                     }
+                    cb();
                 });
                 // todo 确定 有缓存但是输出目录没有的问题;
             }
-            return cb();
 
         }
     }, function (cb) {

@@ -17,6 +17,7 @@ var DEFAULTNAMESPACE = 'sm';
 var src;
 var dirname;
 var map = {};
+var commentsMap = {};
 
 function error(message) {
     throw new Error(message + 'in [' + src + ']');
@@ -144,7 +145,7 @@ var util = {
         return isFlag;
     },
     requireArgHandle: function (argv, based, isCheckFileExists) {
-        var requireArgv, relative, item, _export, info;
+        var requireArgv, relative, item, _export, info, id;
 
         // require 没有参数
         if (argv.length == 0) {
@@ -189,10 +190,11 @@ var util = {
         info = this.uri(requireArgv, dirname, based);
 
         this.checkFileExists(info.realpath, isCheckFileExists);
-
+        id = util.buildId(info.realpath);
+        this.commentsMap(id, info.subpath);
         return {
             path: info.subpath,
-            exports: util.buildId(info.realpath),
+            exports: id,
             usemap: false,
             deps: []
         };
@@ -203,19 +205,25 @@ var util = {
         }
         return absPath;
     },
-    buildId: function (src) {
-        var basename = pth.basename(src);
+    buildId: function (path) {
+        var basename = pth.basename(path),
+            id = basename.replace(/[:\/\\.-]+/g, '_') + this.md5(path, 7);
 
-        return basename.replace(/[:\/\\.-]+/g, '_') + this.md5(src, 7);
+        return id;
     },
-
+    commentsMap: function (id, path) {
+        if (_.isJs(_.extname(src))) {
+            commentsMap[id] = path;
+        }
+    },
     ast2Content: function (ast, isCompress) {
         var escodegenConf = {
                 format: {
                     escapeless: true
                 }
             },
-            content;
+            content,
+            comments;
 
         if (isCompress) {
             escodegenConf = {
@@ -229,12 +237,19 @@ var util = {
                     escapeless: 'true'
                 }
             };
+        } else {
+            comments = _.isEmpty(commentsMap) ? null : JSON.stringify(commentsMap, null, 4);
         }
         try {
             content = escodegen.generate(ast, escodegenConf);
         } catch (e) {
             error(e.message);
         }
+
+        if (comments) {
+            content = '/*' + comments + '*/\n' + content;
+        }
+
         return content;
     }
 
@@ -255,6 +270,7 @@ module.exports = function (opts) {
     }
     src = opts.src;
     map = opts.map || {};
+    commentsMap = {};
     dirname = pth.dirname(src);
     compress = opts.compress;
     based = opts.based || process.cwd();
