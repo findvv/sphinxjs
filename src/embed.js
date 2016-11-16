@@ -30,7 +30,7 @@ function buildTag(deps) {
                 nPath = gutil.replaceExtension(v, rExt);
 
             if (_.isJs(extname) || _.isCss(extname)) {
-                ret += tmpl[ext].replace(/\{\d{1}\}/, '/' + nPath) + '\r';
+                ret += tmpl[ext].replace(/\{\d{1}\}/, '/' + nPath) + '\n\t';
                 existsDep.push(v);
             }
         }

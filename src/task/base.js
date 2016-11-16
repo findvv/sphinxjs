@@ -1,6 +1,6 @@
 'use strict';
 var mergeStream = require('merge-stream');
-var gulp = require('gulp');
+var gulp = require('../../gulp');
 // 错误处理
 var plumber = require('gulp-plumber');
 var notify = require('gulp-notify');
