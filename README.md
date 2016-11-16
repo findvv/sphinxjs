@@ -70,5 +70,85 @@ sphinx release --glob '+(img|css|js)/**'
 
 ```
 
+### 模块化
 
+在项目中可以使用COMMONJS规范的模块化，但是要遵循以下约定：
 
++ 需要使用 'use module' 来做标示，便于sphinx做离线转化。
++ 使用 "require" 请求依赖。
++ 必须使用 “module.exports” 作为模块的输出。
++ 在script标签上加入 data-main 支持模块化代码。
++ 支持别名机制，可以在配置文件中配置。
+
+#### Example
+
+sphinx-conf.js
+
+```js
+module.exports = {
+  alais: {
+    zepto: {
+      path: '/js/zepto.js',
+      exports: 'zepto'
+    },
+    share: {
+      path: '/js/sm.helper.share.js',
+      exports: 'sm.helper.share'
+    }
+  }
+
+}
+
+```
+
+b.js
+
+```js
+  'use module';
+  var zepto = require('zepto');
+  var share = require('share');
+  var a = require('./a.js');
+
+  console.log(a.say());
+
+```
+
+a.js
+
+```js
+  'use module';
+  module.exports = {
+    say: function () {
+      return 'hello';
+    }
+  }
+```
+
+c.css
+
+```css
+  div{
+    color: red;
+  }
+```
+
+index.html
+
+```html
+
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title></title>
+    <script data-main>
+      require('./c.css');
+    </script>
+  </head>
+  <body>
+
+    <script data-main>
+      require('./b.js');
+    </script>
+  </body>
+  </html>
+```
