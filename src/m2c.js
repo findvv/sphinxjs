@@ -9,6 +9,7 @@ var requireDeclare = [':function[id.name = "require"]', 'AssignmentExpression[le
 var requireCall = ['CallExpression[callee.name = "require"]'];
 var moduleExports = ['MemberExpression[property.name = "exports"][object.name = "module"]'];
 var pth = require('path');
+var _ = require('./util.js');
 var fs = require('fs');
 var crypto = require('crypto');
 var pathIsAbsolute = require('path-is-absolute');
@@ -22,12 +23,15 @@ function error(message) {
 }
 var util = {
     uri: function (url, dirname, cwd) {
-        var realpath = pth.resolve(dirname, url),
-            subpath = pth.relative(cwd, realpath);
+
+        var info = _.uri(url, dirname, cwd);
+
+        // var realpath = pth.resolve(dirname, url),
+        //     subpath = pth.relative(cwd, realpath);
 
         return {
-            realpath: realpath,
-            subpath: subpath
+            realpath: info.realpath,
+            subpath: pth.relative(cwd, info.realpath)
         };
     },
     md5: function (data, len) {
@@ -80,7 +84,7 @@ var util = {
 
         ns = ns || DEFAULTNAMESPACE;
         wrapper.push('(function(' + ns + '){');
-        if (exportName && this.isExports(ast, moduleExports)) {
+        if (exportName) {
             wrapper.push(exportName + ' = ' + exportName + ' || {};');
         }
 
