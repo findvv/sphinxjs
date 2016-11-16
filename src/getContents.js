@@ -9,8 +9,8 @@ function readFile(file, onRead) {
     file.cache.check().then(function (flag) {
         if (flag) {
 
-            // onReadFile(null, file.cache.contents);
-            file.cache.getContents(onReadFile);
+            onReadFile(null, file.cache.contents);
+            //file.cache.getContents(onReadFile);
         } else {
             if (file.isNull()) {
                 fs.readFile(file.path, onReadFile);
