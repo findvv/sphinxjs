@@ -5,7 +5,8 @@ var keys = [
     'contents',
     'base',
     'path',
-    'cwd'
+    'cwd',
+    'cache'
 ];
 // 属性前缀，避免重复
 var prefix = 'copy_' + (Math.random() + '').replace(/\D/g, '') + '_';

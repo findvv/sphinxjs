@@ -9,20 +9,19 @@ var mkdirp = require('mkdirp');
 var objectAssign = require('object-assign');
 var rimraf = require('rimraf');
 
-function getCacheDir(optimize) {
+function getCacheDir() {
     var cacheDir = pth.join(_.getCacheDir(), _.last(config.cwd.split(pth.sep)));
 
-    if (optimize) {
-        cacheDir = pth.join(cacheDir, 'optimize');
-    } else {
-        cacheDir = pth.join(cacheDir, 'release');
-    }
     mkdirp(cacheDir);
-    return cacheDir;
+
+    return {
+        release: pth.join(cacheDir, 'release'),
+        optimize: pth.join(cacheDir, 'optimize')
+    };
 }
 
-function Cache(path, mtime, optimize) {
-    var cacheDir = getCacheDir(optimize),
+function Cache(path, mtime) {
+    var cacheDir = getCacheDir(),
         basename = pth.basename(path),
         hash = _.md5(path, 10);
 
@@ -38,13 +37,48 @@ function Cache(path, mtime, optimize) {
     this.requires = [];
     this.arequires = [];
     this.version = pkg.version;
-    this.cacheFile = pth.join(cacheDir, basename + '-content-' + hash + '.tmp');
-    this.cacheInfo = pth.join(cacheDir, basename + '-config-' + hash + '.json');
+    Object.defineProperty(this, 'cacheInfo', {
+
+        configurable: false,
+        get: function () {
+            var dir, path;
+
+            if (this.optimize) {
+                dir = cacheDir['optimize'];
+            } else {
+                dir = cacheDir['release'];
+            }
+            mkdirp(dir);
+
+            path = pth.join(dir, basename + '-config-' + hash + '.json');
+            return path;
+        }
+    });
+    Object.defineProperty(this, 'cacheFile', {
+
+        configurable: false,
+        get: function () {
+            var dir, path;
+
+            if (this.optimize) {
+                dir = cacheDir['optimize'];
+            } else {
+                dir = cacheDir['release'];
+            }
+            mkdirp(dir);
+
+            path = pth.join(dir, basename + '-content-' + hash + '.tmp');
+            return path;
+        }
+    });
     this.hasChange = false;
     this.enable = false;
 }
 
 Cache.prototype = {
+    setCacheType: function (optimize) {
+        this.optimize = !!optimize;
+    },
     _getInfo: function (contents) {
         var info = {
             timestamp: this.timestamp,
@@ -263,15 +297,14 @@ Cache.prototype = {
     }
 };
 Cache.clean = function (func) {
-    var release = getCacheDir(),
-        optimize = getCacheDir(true);
+    var dir = getCacheDir();
 
     if (typeof func !== 'function') {
-        rimraf.sync(release);
-        rimraf.sync(optimize);
+        rimraf.sync(dir.release);
+        rimraf.sync(dir.optimize);
     } else {
-        rimraf(release, function () {
-            rimraf(optimize, function () {
+        rimraf(dir.release, function () {
+            rimraf(dir.optimize, function () {
                 _.isFunction(func) && func();
             });
         });
