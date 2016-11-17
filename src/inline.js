@@ -136,7 +136,7 @@ function execHtml(contents) {
                 m = inline || m;
 
             } else if (tag === 'object') {
-                m = m.replace(/(\sdata\s*=\s*)('[^']+'|"[^"]+"|[^\s\/>]+)/ig, function(m, prefix, value){
+                m = m.replace(/(\sdata\s*=\s*)('[^']+'|"[^"]+"|[^\s\/>]+)/ig, function (m, prefix, value) {
                     return prefix + lang.uri.wrap(value);
                 });
             } else {
