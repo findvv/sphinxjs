@@ -18,33 +18,34 @@ sphinx 神马搜索前端构建工具。
 Usage: sphinx <command>
 
 命令：
-  release  编译发布项目
-  server   编译发布项目，并启用web server
+  release  编译发布项目                       [aliases: r]
+  server   编译发布项目，并启用web server      [aliases: s]
 
 release [options]
-  --glob, -g      [array]   使用glob配置要编译的文件
+  --glob, -g      [array] 使用glob配置要编译的文件
   --dest, -d      [string]  编译输出目录
   --optimize, -o  [boolean] 启用压缩
   --conf          [string]  指定配置文件的路径
   --cwd           [string]  指定要编译项目的路径
-  --namespace     [string]  指定模块化编译时，全局namespace. 只在启用模块化时有效
+  --clean, -c     [boolean] 清除缓存
 
 server [options]
-  --live, -L  [boolean]   启用livereload，自动刷新浏览器
-  --qrcode          [boolean]   生成URL二维码
-  --startpath       [string]    指定打开浏览器时的相对路径
-  --port, -p        [number]    web server的端口
-  --glob, -g        [array] 使用glob配置要编译的文件
-  --dest, -d        [string]    编译输出目录
-  --optimize, -o    [boolean]   启用压缩
-  --conf            [string]    指定配置文件的路径
-  --cwd             [string]    指定要编译项目的路径
-  --namespace       [string]    指定模块化编译时，全局namespace.
-                    只在启用模块化时有效
+  --live, -L      [boolean] 启用livereload，自动刷新浏览器
+  --qrcode        [boolean] 生成URL二维码
+  --startpath     [string]  指定打开浏览器时的相对路径
+  --port, -p      [number]  web server的端口
+  --glob, -g      [array] 使用glob配置要编译的文件
+  --dest, -d      [string]  编译输出目录
+  --optimize, -o  [boolean] 启用压缩
+  --conf          [string]  指定配置文件的路径
+  --cwd           [string]  指定要编译项目的路径
+  --clean, -c     [boolean] 清除缓存
 
 选项：
   -v, --version  显示版本号
-  -h, --help     显示帮助                                                 [布尔]
+  -c, --clean    清除缓存
+  -h, --help     显示帮助文档                                             [布尔]
+
 
 ```
 使用sphinx只有两条命令：
@@ -52,9 +53,27 @@ server [options]
 + sphinx release: 编译并发布项目
 + sphinx server: 编译发布项目，并启动内置调试服务器
 
+### 配置文件
+
+sphinx的所有命令行参数都可在sphinx-conf.js中进行配置
+
+```js
+module.exports = {
+  glob: [
+    "+(img)/**"
+  ],
+  solution: 'sc',
+  entry: 'result.html',
+  dest: 'output'
+}
+
+```
+
+*NOTE:* `solution`和`entry`是SM搜索sc业务基于sphinx封装解决方案的专用参数。
+
 ### glob规则
 
-sphinx使用node-glob提供glob的支持，具体规则[node-glob](https://github.com/isaacs/node-glob)，这里简单列下规则：
+sphinx使用node-glob提供glob的支持，具体规则[node-glob](https://github.com/isaacs/node-glob)或者[node-glob学习笔记](http://www.cnblogs.com/liulangmao/p/4552339.html)，这里简单列下规则：
 
     - `*`  匹配0或多个除了 `/` 以外的字符
     - `?`  匹配单个除了 `/` 以外的字符
@@ -82,7 +101,7 @@ sphinx release --glob '+(img|css|js)/**'
 
 #### Example
 
-sphinx-conf.js
+sphinx-conf.js 中配置模块化使用的别名以及依赖
 
 ```js
 module.exports = {
@@ -93,7 +112,8 @@ module.exports = {
     },
     share: {
       path: '/js/sm.helper.share.js',
-      exports: 'sm.helper.share'
+      exports: 'sm.helper.share',
+      deps: ['/js/sm.helper.ucAPI.v1.js']
     }
   }
 
@@ -152,3 +172,58 @@ index.html
   </body>
   </html>
 ```
+### 资源定位
+
++ 在html支持script、link、style等带有src或href属性的资源定位。
++ 在js文件中支持使用__uri进行资源定位。
++ 在css文件中识别url进行资源定位。
+
+### 内嵌资源
+
++ 在html中内嵌资源
+
+  1. 内嵌图片
+  ```html
+  <!--源码-->
+  <img title="SM" src="images/SM.png?__inline"/>
+
+  <!--编译后-->
+  <img title="SM" src="data:image/png;base64,asdfasdfsdfadf"/>
+
+  ```
+  2. 内嵌样式
+  ```html
+  <!--源码-->
+  <link rel="stylesheet" type="text/css" href="demo.css?__inline">
+
+  <!--编译后-->
+  <style>img { border: 5px solid #ccc; }</style>
+  ```
+
+  3. 内嵌脚本
+  ```html
+  <!--源码-->
+  <script type="text/javascript" src="demo.js?__inline"></script>
+
+  <!--编译后-->
+  <script type="text/javascript">console.log('inline file');</script>
+  ```
+  4. 内嵌页面
+  ```html
+  <!--源码-->
+  <link rel="import" href="demo.html?__inline">
+
+  <!--编译后-->
+  <h1>demo.html content</h1>
+  ```
++ 在js中内嵌资源
+
+  在js中可以利用__inline(path)内嵌资源。
+
++ 在css中内嵌资源
+
+  通过添加 ?__inline 编译标记都可以把文件内容嵌入进来
+
+### TMPL文件
+
+  TMPL文件是sphinx中的模板文件，主要使用Underscore来编译。
