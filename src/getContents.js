@@ -64,17 +64,14 @@ module.exports = function (optimize) {
         if (file.stat && file.stat.isSymbolicLink()) {
             return readLink(file, onRead);
         }
-        if (!('cache' in file)) {
-            cache = new Cache(file.path, file.stat.mtime.getTime());
-            cache.setCacheType(optimize);
-            Object.defineProperty(file, 'cache', {
-                writable: true,
-                configurable: false,
-                value: cache
-            });
-        } else {
-            file.cache.setCacheType(optimize);
-        }
+
+        cache = new Cache(file.path, file.stat.mtime.getTime());
+        cache.setCacheType(optimize);
+        Object.defineProperty(file, 'cache', {
+            writable: true,
+            configurable: false,
+            value: cache
+        });
 
         function onRead(readErr) {
             callback(readErr, file);
