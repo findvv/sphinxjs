@@ -1,7 +1,7 @@
 {
   "name": "sphinxjs",
   "description": "基于gulp4，借鉴fis的构建工具",
-  "version": "0.6.13",
+  "version": "0.6.14",
   "dependencies": {
     "async-done": "1.2.2",
     "bigfont": "0.0.5",
