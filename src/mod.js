@@ -25,7 +25,7 @@ function parseHtml(file) {
         depsOrder = {},
         count = 0,
         contents,
-        regExp = /<(script) .*?data-main.*?>([\s\S]*?)<\/\1>/mig;
+        regExp = /<(script).*?data-main.*?>([\s\S]*?)<\/\1>/mig;
 
     if (file.cache && file.cache.enable) {
 
@@ -41,9 +41,8 @@ function parseHtml(file) {
     } else {
         contents = file.contents.toString();
 
-        contents = contents.replace(regExp, function () {
-            var content = arguments[2],
-                nContent = lang.depsEmbed.wrap(file.path + count),
+        contents = contents.replace(regExp, function (all, tag, content) {
+            var nContent = lang.depsEmbed.wrap(file.path + count),
                 ret;
 
             count++;
@@ -95,6 +94,7 @@ function parseJS(file, cb) {
 
             return;
         }
+
         ret = m2c({
             src: file.path,
             based: file.cwd,
