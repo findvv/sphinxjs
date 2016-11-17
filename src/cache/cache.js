@@ -87,7 +87,7 @@ Cache.prototype = {
             depsOrder: this.depsOrder,
             arequires: this.arequires,
             version: this.version
-            //contents: contents
+            // contents: contents
         };
 
         return info;
