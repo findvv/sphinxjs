@@ -232,3 +232,16 @@
 //     this.push(obj);
 //     cb();
 // }));
+
+var regExp =/<(script).*?data-main.*?>([\s\S]*?)<\/\1>/mig;
+var s = '<script src="./z.js" type="text/javascript" data-main>asdf</script>';
+console.log(regExp.test(s));
+
+s.replace(regExp, function () {
+    console.dir(arguments);
+});
+
+
+
+
+
