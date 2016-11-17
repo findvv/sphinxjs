@@ -86,8 +86,8 @@ Cache.prototype = {
             requires: this.requires,
             depsOrder: this.depsOrder,
             arequires: this.arequires,
-            version: this.version,
-            contents: contents
+            version: this.version
+            //contents: contents
         };
 
         return info;
@@ -102,16 +102,16 @@ Cache.prototype = {
         info = this._getInfo(contents);
 
         mkdirp(pth.dirname(this.cacheInfo));
-        this.setConfig(info).then(function () {
-            onWrite();
-        }).catch(function (e) {
-            onWrite(e);
-        });
-        // Promise.all([this.setContents(contents), this.setConfig(info)]).then(function () {
+        // this.setConfig(info).then(function () {
         //     onWrite();
         // }).catch(function (e) {
         //     onWrite(e);
         // });
+        Promise.all([this.setContents(contents), this.setConfig(info)]).then(function () {
+            onWrite();
+        }).catch(function (e) {
+            onWrite(e);
+        });
     },
     saveSync: function (contents) {
         var info;
@@ -217,7 +217,7 @@ Cache.prototype = {
                 self.deps = deps;
                 self.requires = cacheInfo.requires;
                 self.arequires = cacheInfo.arequires;
-                self.contents = cacheInfo.contents;
+               // self.contents = cacheInfo.contents;
                 self.enable = true;
                 return true;
             }

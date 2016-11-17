@@ -9,8 +9,8 @@ function readFile(file, onRead) {
     file.cache.check().then(function (flag) {
         if (flag) {
 
-            onReadFile(null, file.cache.contents);
-            //file.cache.getContents(onReadFile);
+            // onReadFile(null, file.cache.contents);
+            file.cache.getContents(onReadFile);
         } else {
             if (file.isNull()) {
                 fs.readFile(file.path, onReadFile);
@@ -64,15 +64,17 @@ module.exports = function (optimize) {
         if (file.stat && file.stat.isSymbolicLink()) {
             return readLink(file, onRead);
         }
-
-        cache = new Cache(file.path, file.stat.mtime.getTime());
-        cache.setCacheType(optimize);
-
-        Object.defineProperty(file, 'cache', {
-            writable: true,
-            configurable: false,
-            value: cache
-        });
+        if (!('cache' in file)) {
+            cache = new Cache(file.path, file.stat.mtime.getTime());
+            cache.setCacheType(optimize);
+            Object.defineProperty(file, 'cache', {
+                writable: true,
+                configurable: false,
+                value: cache
+            });
+        } else {
+            file.cache.setCacheType(optimize);
+        }
 
         function onRead(readErr) {
             callback(readErr, file);
@@ -80,29 +82,5 @@ module.exports = function (optimize) {
 
         return readFile(file, onRead);
 
-    });
-};
-
-function defineContents(file) {
-    var descriptor = Object.getOwnPropertyDescriptor(file.constructor.prototype, 'contents');
-
-    var cache = new Cache(file);
-
-    Object.defineProperty(file, 'cache', {
-        writable: true,
-        configurable: false,
-        value: cache
-    });
-
-    Object.defineProperty(file, 'contents', {
-        get: function () {
-            if (cache.check()) {
-                return new Buffer(cache.contents);
-            }
-            return descriptor.get.call(this);
-        },
-        set: function (val) {
-            descriptor.set.call(this, val);
-        }
     });
 };

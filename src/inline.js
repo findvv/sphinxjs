@@ -62,7 +62,7 @@ function execCss(contents) {
 
 function execHtml(contents) {
     // (?:<!--[\s\S]*?-->) 过滤掉注释
-    var reg = /(?:<!--[\s\S]*?-->)|(<script(?:(?=\s)[\s\S]*?>|>))([\s\S]*?)(?=<\/script\s*>)|(<style(?:(?=\s)[\s\S]*?>|>))([\s\S]*?)(?=<\/style\s*>)|<(img|link)\s+[\s\S]*?(?:>)/ig;
+    var reg = /(?:<!--[\s\S]*?-->)|(<script(?:(?=\s)[\s\S]*?>|>))([\s\S]*?)(?=<\/script\s*>)|(<style(?:(?=\s)[\s\S]*?>|>))([\s\S]*?)(?=<\/style\s*>)|<(img|link|embed|audio|video|object|source)\s+[\s\S]*?(?:>)/ig;
 
     contents = contents.replace(reg, function (m, $1, $2, $3, $4, $5) {
 
@@ -135,8 +135,12 @@ function execHtml(contents) {
 
                 m = inline || m;
 
+            } else if (tag === 'object') {
+                m = m.replace(/(\sdata\s*=\s*)('[^']+'|"[^"]+"|[^\s\/>]+)/ig, function(m, prefix, value){
+                    return prefix + lang.uri.wrap(value);
+                });
             } else {
-                m = m.replace(/(\ssrc\s*=\s*)('[^']+'|"[^"]+"|[^\s\/>]+)/ig, function (_, prefix, url) {
+                m = m.replace(/(\s(?:data-)?src\s*=\s*)('[^']+'|"[^"]+"|[^\s\/>]+)/ig, function (_, prefix, url) {
                     if (isInline(url)) {
                         return prefix + lang.embed.wrap(url);
                     } else {
