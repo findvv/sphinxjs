@@ -3,22 +3,32 @@ var Cache = require('./cache/cache');
 var through = require('through2');
 var fs = require('graceful-fs');
 var stripBom = require('strip-bom');
+var config = require('./configure/config.js');
 
 function readFile(file, onRead) {
 
-    file.cache.check().then(function (flag) {
-        if (flag) {
-
-            // onReadFile(null, file.cache.contents);
-            file.cache.getContents(onReadFile);
+    if (config.clean) {
+        if (file.isNull()) {
+            fs.readFile(file.path, onReadFile);
         } else {
-            if (file.isNull()) {
-                fs.readFile(file.path, onReadFile);
-            } else {
-                onRead();
-            }
+            onRead();
         }
-    });
+
+    } else {
+        file.cache.check().then(function (flag) {
+            if (flag) {
+
+                // onReadFile(null, file.cache.contents);
+                file.cache.getContents(onReadFile);
+            } else {
+                if (file.isNull()) {
+                    fs.readFile(file.path, onReadFile);
+                } else {
+                    onRead();
+                }
+            }
+        });
+    }
 
     function onReadFile(readErr, data) {
         if (readErr) {
