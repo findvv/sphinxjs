@@ -25,7 +25,8 @@ function parseHtml(file) {
         depsOrder = {},
         count = 0,
         contents,
-        regExp = /<(script).*?data-main.*?>([\s\S]*?)<\/\1>/mig;
+        regExp = /<(script).*?(?:(?:src\s*=\s*('[^']+'|"[^"]+"|[^\s\/>]+)(?=.*?data-main))|(?:data-main.*?(?=src\s*=\s*('[^']+'|"[^"]+"|[^\s\/>]+)))|(?:data-main)).*?>([\s\S]*?)<\/\1>/mig;
+        // regExp = /<(script)(.*?data-main.*?)>([\s\S]*?)<\/\1>/mig;
 
     if (file.cache && file.cache.enable) {
 
@@ -41,12 +42,19 @@ function parseHtml(file) {
     } else {
         contents = file.contents.toString();
 
-        contents = contents.replace(regExp, function (all, tag, content) {
+        contents = contents.replace(regExp, function (all, tag, $2, $3, content) {
             var nContent = lang.depsEmbed.wrap(file.path + count),
-                ret;
+                ret,
+                url = $2 || $3;
+
+            if (url) {
+                content = 'require(' + url + ');' + content;
+            }
 
             count++;
-
+            if (_.trim(content).length == 0) {
+                return all;
+            }
             ret = m2c({
                 src: file.path,
                 based: file.cwd,
@@ -101,7 +109,8 @@ function parseJS(file, cb) {
             content: contents.replace(regExp, ''),
             isWrap: true,
             ns: config.namespace,
-            map: config.alias || {}
+            map: config.alias || {},
+            compress: config.optimize
         });
         if (ret) {
             file.contents = new Buffer(ret.content);

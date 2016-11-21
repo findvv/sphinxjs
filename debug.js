@@ -232,3 +232,26 @@
 //     this.push(obj);
 //     cb();
 // }));
+// (((\ssrc\s*=\s*)()(?=.*?data-main))
+// ((src\s*=\s*('[^']+'|"[^"]+"|[^\s\/>]+))(?=.*?data-main))
+// (?<=data-main.*?)(src\s*=\s*('[^']+'|"[^"]+"|[^\s\/>]+))
+// var regExp = /<(script).*?(?:(?:src\s*=\s*('[^']+'|"[^"]+"|[^\s\/>]+)(?=.*?data-main))|(?:data-main.*?(?=src\s*=\s*('[^']+'|"[^"]+"|[^\s\/>]+)))|(?:data-main)).*?>([\s\S]*?)<\/\1>/mig;
+// var s = '<script    data-main   type="text/javascript" src="./x1.js">asdf</script>';
+// console.log(regExp.test(s));
+
+// s.replace(regExp, function () {
+//     console.dir(arguments);
+// });
+// var regExp = /((?:(require)\s*?\((['"]{1})([^'"]*)\3\))|(module\.exports))/gmi;
+
+// var s = "require('xx.js');module.exports = 5";
+
+// s.replace(regExp, function () {
+//     console.dir(arguments);
+// });
+
+
+
+
+
+
