@@ -27,7 +27,7 @@ function buildTag(deps) {
             var extname = _.extname(v),
                 rExt = _.getReleaseExt(extname),
                 ext = rExt.replace('.', ''),
-                nPath = gutil.replaceExtension(v, rExt);
+                nPath = gutil.replaceExtension(v, config.optimize && config.min ? ('.min' + rExt) : rExt);
 
             if (_.isJs(extname) || _.isCss(extname)) {
                 ret += tmpl[ext].replace(/\{\d{1}\}/, '/' + nPath) + '\n\t';
