@@ -78,7 +78,6 @@ var util = {
             };
         }
     },
-
     wrap: function (ast, exportName, ns) {
         var wrapper = [],
             wAst;
@@ -147,15 +146,19 @@ var util = {
     requireArgHandle: function (argv, based, isCheckFileExists) {
         var requireArgv, relative, item, _export, info, id;
 
-        // require 没有参数
-        if (argv.length == 0) {
-            error('exists no parameter require');
+        if (_.isString(argv)) {
+            requireArgv = argv;
+        } else {
+             // require 没有参数
+            if (argv.length == 0) {
+                error('exists no parameter require');
+            }
+            // require 参数不是String
+            if (argv[0].type !== Syntax.Literal || typeof argv[0].value !== 'string') {
+                error('require function accepts only string parameter');
+            }
+            requireArgv = argv[0].value;
         }
-        // require 参数不是String
-        if (argv[0].type !== Syntax.Literal || typeof argv[0].value !== 'string') {
-            error('require function accepts only string parameter');
-        }
-        requireArgv = argv[0].value;
 
         if (requireArgv in map) {
 
@@ -255,31 +258,69 @@ var util = {
 
 };
 
-module.exports = function (opts) {
-    var content, based, isCheckFileExists,
-        ast, deps = [],
-        ns, exportName,
-        isWrap, compress;
+function m2cByRegExp(opts) {
+    var content = opts.content,
+        based = opts.based,
+        isCheckFileExists = opts.isCheckFileExists,
+        deps = [],
+        ns = opts.ns,
+        exportName = opts.exportName,
+        isWrap = opts.isWrap,
+        wrapper = [],
+        regExp = /(?:(?:(?:require)\s*?\((['"]{1})([^'"]*)\1\))|(module\.exports))/gmi;
 
-    opts = opts || {};
-    if (!pathIsAbsolute(opts.src)) {
-        error('src must be absolute path');
+    content = content.replace(regExp, function (all, $1, require, exports) {
+        var info, id, usemap;
+
+        if (require) {
+
+            info = util.requireArgHandle(require, based, isCheckFileExists);
+            deps = deps.concat(info.deps);
+            deps.push(info.path);
+            id = info.exports;
+            usemap = info.usemap;
+        }
+
+        if (exports) {
+            id = util.buildId(src);
+            exportName = ns + '.' + id;
+        }
+
+        if (id) {
+            if (usemap) {
+                return id;
+            }
+
+            return ns + '.' + id;
+        }
+        return all;
+    });
+
+    if (isWrap) {
+        wrapper.push('(function(' + ns + '){');
+        if (exportName) {
+            wrapper.push(exportName + ' = ' + exportName + ' || {};');
+        }
+        wrapper.push(content);
+
+        wrapper.push('})((window.' + ns + ' = window.' + ns + ' || {}));');
     }
-    if (!opts.content) {
-        error('content is required');
-    }
-    src = opts.src;
-    map = opts.map || {};
-    commentsMap = {};
-    dirname = pth.dirname(src);
-    compress = opts.compress;
-    based = opts.based || process.cwd();
-    content = opts.content;
-    ns = opts.ns || DEFAULTNAMESPACE;
+    return {
+        content: content,
+        deps: deps
+    };
+}
 
-    isWrap = opts.isWrap;
+function m2cByAST(opts) {
+    var ast, content = opts.content,
+        deps = [],
+        based = opts.based,
+        isCheckFileExists = opts.isCheckFileExists,
+        ns = opts.ns,
+        isWrap = opts.isWrap,
+        exportName = opts.exportName,
+        compress = opts.compress;
 
-    isCheckFileExists = opts.isCheckFileExists;
     ast = util.content2AST(content);
     // 存在require的声明或者 没有require和module.exports,则跳过该文件
     if (util.isExistsNode(ast, requireDeclare) || (!util.isExistsNode(ast, requireCall) && !util.isExistsNode(ast, moduleExports))) {
@@ -338,4 +379,73 @@ module.exports = function (opts) {
         content: util.ast2Content(ast, compress),
         deps: deps
     };
+}
+
+function getOpts(opts) {
+    var result = {};
+
+    opts = opts || {};
+    if (!pathIsAbsolute(opts.src)) {
+        error('src must be absolute path');
+    }
+    if (!opts.content) {
+        error('content is required');
+    }
+    src = opts.src;
+    commentsMap = {};
+
+    result = {
+        src: src,
+        map: opts.map || {},
+        dirname: pth.dirname(src),
+        compress: opts.compress,
+        based: opts.based || process.cwd(),
+        content: opts.content,
+        ns: opts.ns || DEFAULTNAMESPACE,
+        isWrap: opts.isWrap,
+        isCheckFileExists: opts.isCheckFileExists,
+        isAST: opts.isAST
+    };
+
+    return result;
+
+}
+
+module.exports = function (opts) {
+    // var content, based, isCheckFileExists,
+    //     ast, deps = [],
+    //     ns, exportName,
+    //     isWrap, compress;
+
+    // opts = opts || {};
+    // if (!pathIsAbsolute(opts.src)) {
+    //     error('src must be absolute path');
+    // }
+    // if (!opts.content) {
+    //     error('content is required');
+    // }
+    // src = opts.src;
+    // map = opts.map || {};
+    // commentsMap = {};
+    // dirname = pth.dirname(src);
+    // compress = opts.compress;
+    // based = opts.based || process.cwd();
+    // content = opts.content;
+    // ns = opts.ns || DEFAULTNAMESPACE;
+
+    // isWrap = opts.isWrap;
+
+    // isCheckFileExists = opts.isCheckFileExists;
+    opts = getOpts(opts);
+    src = opts.src;
+    dirname = opts.dirname;
+    map = opts.map;
+    commentsMap = {};
+
+    if (!opts.isRegExp) {
+
+        return m2cByAST(opts);
+    } else {
+        return m2cByRegExp(opts);
+    }
 };
