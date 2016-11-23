@@ -130,10 +130,15 @@ function configFileCache() {
     mkdirp(cacheDir);
     return {
         getContents: function () {
+            var result = {};
+
             if (_.exists(cachePath)) {
                 content = fs.readFileSync(cachePath);
-
-                return JSON.parse(content);
+                try {
+                    return JSON.parse(content);
+                } catch (e) {
+                    return result;
+                }
             } else {
                 return {};
             }
