@@ -242,16 +242,4 @@
 // s.replace(regExp, function () {
 //     console.dir(arguments);
 // });
-var regExp = /(?:(?:(?:require)\s*?\((['"]{1})([^'"]*)\1\))|(module\.exports))/gmi;
-
-var s = "require('xx.js');module.exports = 5";
-
-s.replace(regExp, function () {
-    console.dir(arguments);
-});
-
-
-
-
-
 
