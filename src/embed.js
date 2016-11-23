@@ -112,14 +112,14 @@ module.exports = function () {
                 try {
                     switch (type) {
                         case 'uri':
-                            if (info.url && info.exists) {
+                            if (info.url) {
                                 ret = info.quote + info.url + info.quote;
                             } else {
                                 ret = url;
                             }
                             break;
                         case 'require':
-                            if (info.id && info.exists) {
+                            if (info.id) {
                                 ret = info.quote + info.id + info.quote;
                             } else {
                                 ret = url;
