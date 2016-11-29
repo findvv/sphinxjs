@@ -133,21 +133,25 @@ module.exports = {
                 contents = contents.replace(reg, function (all, value, url) {
                     var info;
 
-                    if (all && !(/;\s*$/.test(all))) {
+                    if (url && !(/;\s*$/.test(url))) {
                         all += ';';
                     }
-                    url = url.replace(/["';]*/igm, '');
-                    info = util.uri(url, file.dirname, file.cwd);
-                    if (info.url && info.exists) {
-                        url = info.quote + info.url + info.query + info.quote;
+                    if (url) {
+                        url = url.replace(/["';]*/igm, '');
+                        info = util.uri(url, file.dirname, file.cwd);
+                        if (info.url && info.exists) {
+                            url = info.quote + info.url + info.query + info.quote;
+                        }
+
+                        embeds.push(lang.cssImportEmbed.wrap(url));
+                    } else {
+
                     }
-
-                    embeds.push(lang.cssImportEmbed.wrap(url));
-
                     return all;
                 });
-
-                contents = '/*' + embeds.join('\n') + '*/' + contents;
+                if (embeds.length) {
+                    contents = '/*' + embeds.join('\n') + '*/' + contents;
+                }
                 file.contents = new Buffer(contents);
                 this.push(file);
                 return cb();
