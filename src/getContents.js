@@ -17,7 +17,6 @@ function readFile(file, onRead) {
     } else {
         file.cache.check().then(function (flag) {
             if (flag) {
-
                 // onReadFile(null, file.cache.contents);
                 file.cache.getContents(onReadFile);
             } else {
@@ -81,6 +80,14 @@ module.exports = function (optimize) {
             writable: true,
             configurable: false,
             value: cache
+        });
+
+        Object.defineProperty(file, 'meta', {
+            writable: true,
+            configurable: false,
+            value: {
+                path: file.path
+            }
         });
 
         function onRead(readErr) {

@@ -13,6 +13,8 @@ var copy = require('../copy');
 var _ = require('../util');
 var importer = require('../sass').importer;
 var fixImport = require('../sass').fixImport;
+//var delSphinx = require('../sass').delSphinx;
+
 var ext = require('../ext');
 // var props = require('../props');
 var cached = require('../cached');
@@ -86,7 +88,7 @@ Base.prototype = {
         }
 
         this.cacheFilter = filter(function (file) {
-            return !(file.cache && file.cache.enable) && _.isText(_.extname(file.path));
+            return !(file.cache && file.cache.enable);
         }, {
             restore: true
         });
@@ -231,7 +233,7 @@ Base.prototype = {
             stream = stream.pipe(filterStream);
 
             stream = stream.pipe(rename(function (path) {
-                path.extname = '.min' + path.extname;
+                path.extname = '.min' + _.getReleaseExt(path.extname);
                 return path;
             }));
             stream = stream.pipe(filterStream.restore);
@@ -304,8 +306,10 @@ Base.handler = {
                 .pipe(fixImport())
                 .pipe(sass({
                     importer: importer(this._cwd),
-                    includePaths: [this._cwd]
+                    includePaths: [this._cwd],
+                    outputStyle: 'expanded'
                 }))
+                //.pipe(delSphinx())
                 .pipe(ifElse(this._sourcemap, function () {
                     var sourcemaps = require('gulp-sourcemaps');
 

@@ -44,7 +44,10 @@ function addCacheDeps(a, b) {
         if (b.cache) {
             a.cache.mergeDeps(b.cache);
         }
-        a.cache.addDeps(b.path || b);
+        if (b.stat && b.stat.mtime) {
+            var mtime = b.stat.mtime.getTime();
+        }
+        a.cache.addDeps(b.meta.path || b, mtime);
     }
 }
 
@@ -104,7 +107,8 @@ module.exports = function () {
 
                 url = url.replace(/\\\'/ig, '');
                 info = _.uri(url, dirname, cwd);
-                obj = store.find(info.release);
+                obj = store.find(info.release) || store.find(info.realpath);
+
                 if (obj && !obj.piped) {
                     embed(obj);
                 }
@@ -124,6 +128,12 @@ module.exports = function () {
                             } else {
                                 ret = url;
                             }
+                            break;
+                        case 'cssImportEmbed':
+                            if (obj) {
+                                addCacheDeps(file, obj.file);
+                            }
+                            ret = '';
                             break;
                         case 'embed':
                         case 'jsEmbed':

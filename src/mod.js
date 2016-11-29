@@ -128,6 +128,11 @@ module.exports = function () {
             return cb();
         }
 
+        if (_.isText(_.extname(file.path))) {
+            this.push(file);
+            return cb();
+        }
+
         if (file.isBuffer()) {
             try {
                 parser(file);

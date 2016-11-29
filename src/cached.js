@@ -53,9 +53,11 @@ module.exports = function () {
                 }
 
                 path = pth.resolve(config.cwd, dest, file.relative);
-                if (optimize) {
 
-                    path = path.replace(extname, '.min' + extname);
+                if (optimize) {
+                    var _extname = _.extname(path);
+
+                    path = path.replace(_extname, '.min' + _extname);
                 }
 
                 fs.exists(path, function (flag) {

@@ -193,6 +193,10 @@ module.exports = function () {
             return cb();
         }
 
+        if (!util.isText(util.extname(file.path))) {
+            this.push(file);
+            return cb();
+        }
         if (file.isBuffer()) {
             if (!file.cache.enable) {
                 process(file);

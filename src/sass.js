@@ -18,7 +18,6 @@ function fixSource(contents, dirname, cwd) {
         if (info.url && info.exists) {
             url = info.quote + info.url + info.query + info.quote;
         }
-
         return url;
     });
 
@@ -96,9 +95,7 @@ module.exports = {
             } else {
                 dir = includePaths.shift();
             }
-
             target = find(url, [dir], cwd);
-
             if (!target) {
                 // error
                 done();
@@ -117,6 +114,7 @@ module.exports = {
     fixImport: function () {
         return through.obj(function (file, enc, cb) {
             var contents;
+            var embeds = [];
             var reg = /(?:(?:\/\/.*?\n)|(?:\/\*[\s\S]*?\*\/))|(?:@\b(charset|import)\s([\s\S]*?)(?:\n|$)(?!\s+[^{@]*\n))/ig;
 
             if (file.isNull()) {
@@ -132,19 +130,52 @@ module.exports = {
             if (file.isBuffer()) {
                 contents = file.contents.toString();
 
-                contents = contents.replace(reg, function (all, value) {
+                contents = contents.replace(reg, function (all, value, url) {
+                    var info;
 
-                    if (value && !/;$/.test(value)) {
+                    if (all && !(/;\s*$/.test(all))) {
                         all += ';';
                     }
+                    url = url.replace(/["';]*/igm, '');
+                    info = util.uri(url, file.dirname, file.cwd);
+                    if (info.url && info.exists) {
+                        url = info.quote + info.url + info.query + info.quote;
+                    }
+
+                    embeds.push(lang.cssImportEmbed.wrap(url));
 
                     return all;
                 });
 
+                contents = '/*' + embeds.join('\n') + '*/' + contents;
                 file.contents = new Buffer(contents);
                 this.push(file);
                 return cb();
             }
         });
     }
+    // delSphinx: function () {
+    //     return through.obj(function (file, enc, cb) {
+    //         if (file.isNull()) {
+    //             this.push(file);
+    //             return cb();
+    //         }
+
+    //         if (file.isStream()) {
+    //             this.push(file);
+    //             return cb();
+    //         }
+
+    //         if (file.isBuffer()) {
+    //             var contents = file.contents.toString();
+
+    //             contents = contents.replace(/@sphinx/gim, '');
+
+    //             file.contents = new Buffer(contents);
+    //             this.push(file);
+    //             return cb();
+    //         }
+    //     });
+    // }
+
 };
