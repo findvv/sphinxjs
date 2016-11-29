@@ -237,8 +237,8 @@ Cache.prototype = {
             return false;
         }
     },
-    addDeps: function (path) {
-        var mtime, self = this;
+    addDeps: function (path, mtime) {
+        var self = this;
 
         if (Array.isArray(path)) {
             path.forEach(function (v) {
@@ -252,12 +252,19 @@ Cache.prototype = {
             path = path.replace(/['"]/g, '');
             if (path) {
                 path = pth.resolve(config.cwd, path);
-                mtime = _.mtime(path);
-                if (mtime == 0) {
+                var _mtime;
+
+                if (mtime) {
                     this.deps[path] = mtime;
                 } else {
-                    this.deps[path] = mtime.getTime();
+                    _mtime = _.mtime(path);
+                    if (_mtime == 0) {
+                        this.deps[path] = _mtime;
+                    } else {
+                        this.deps[path] = _mtime.getTime();
+                    }
                 }
+
                 this.hasChange = true;
 
             }

@@ -57,6 +57,7 @@ module.exports = (function () {
         'embed', // 内嵌其他文件
         'jsEmbed', // 内嵌 js 文件内容
         'depsEmbed', // html模块化分析后内嵌
+        'cssImportEmbed', // sass依赖
         // 'async', // 异步依赖
         // 'jsAsync', // js 异步依赖
         'uri', // 替换成目标文件的 url
