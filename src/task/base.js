@@ -25,6 +25,7 @@ var writeCache = require('../writeCache.js');
 var location = require('../location.js');
 var mod = require('../mod.js');
 var tmpl = require('gulp-template');
+var tinypng = require('../tinypng.js');
 
 // 数组去重
 function unique(array) {
@@ -362,7 +363,7 @@ Base.handler = {
         },
 
         optimize: function (stream) {
-            return stream;
+            return stream.pipe(tinypng());
         }
     },
     tmpl: {
