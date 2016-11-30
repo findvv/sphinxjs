@@ -128,7 +128,7 @@ module.exports = function () {
             return cb();
         }
 
-        if (_.isText(_.extname(file.path))) {
+        if (!_.isText(_.extname(file.path))) {
             this.push(file);
             return cb();
         }
