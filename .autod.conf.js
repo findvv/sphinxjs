@@ -1,7 +1,12 @@
 module.exports = {
     write: true,
-    keep: [
+    prefix:'^',
+	keep: [
         'bigfont',
         'plugin-extend'
-    ]
+    ],
+	semver: [
+		'nunjucks-component-extension-middleware@latest'	
+	]
+
 };
