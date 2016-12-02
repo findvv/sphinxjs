@@ -14,6 +14,8 @@ var dTmpl = {
     css: '<link rel="stylesheet" type="text/css" href="{0}">'
 };
 
+var _optimize;
+
 function buildTag(deps) {
     var existsDep = [],
         ret = '',
@@ -27,7 +29,7 @@ function buildTag(deps) {
             var extname = _.extname(v),
                 rExt = _.getReleaseExt(extname),
                 ext = rExt.replace('.', ''),
-                nPath = gutil.replaceExtension(v, config.optimize && config.min ? ('.min' + rExt) : rExt);
+                nPath = gutil.replaceExtension(v, _optimize && config.min ? ('.min' + rExt) : rExt);
 
             if (_.isJs(extname) || _.isCss(extname)) {
                 ret += tmpl[ext].replace(/\{\d{1}\}/, '/' + nPath) + '\n\t';
@@ -51,7 +53,9 @@ function addCacheDeps(a, b) {
     }
 }
 
-module.exports = function () {
+module.exports = function (optimize) {
+    _optimize = optimize;
+
     return through.obj(function (file, enc, cb) {
         if (file.isNull()) {
             this.push(file);
@@ -123,7 +127,7 @@ module.exports = function () {
                             }
                             break;
                         case 'require':
-                            if (info.id) {
+                            if (info.id && info.exists) {
                                 ret = info.quote + info.id + info.quote;
                             } else {
                                 ret = url;

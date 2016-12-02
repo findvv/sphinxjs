@@ -7,6 +7,39 @@ var config = require('./src/configure/config.js');
 var ifElse = require('gulp-if-else');
 var bs;
 
+function createRelease(Solution, optimize) {
+    return function (cb) {
+        var glob = config.glob;
+
+        return new Solution(glob, {
+            cwd: config.cwd,
+            dest: config.dest,
+            optimize: optimize,
+            // lastRun: gulp.lastRun('release'),
+            sourcemap: config.sourcemap
+                // es6: config.get('es6')
+        })
+        .stream
+        .pipe(ifElse(bs && config.live, function () {
+            return bs.stream({
+                match: '**/*.*'
+            });
+        }));
+    };
+}
+
+function releaseSeries(Solution) {
+    var fns = [];
+
+    fns.push(createRelease(Solution));
+
+    if (config.optimize) {
+        fns.push(createRelease(Solution, true));
+    }
+
+    return gulp.series(fns);
+}
+
 function execute(Solution) {
 
     gulp.on('start', function (e) {
@@ -48,53 +81,7 @@ function execute(Solution) {
         process.exit(1);
     });
 
-    gulp.task('release', gulp.series([
-        function (cb) {
-            var glob = config.glob;
-
-            //     globHandler = function () {
-            //         var dest = config.dest,
-            //             cwd = config.cwd,
-
-            //             dGlob;
-
-            //         dest = pth.resolve(cwd, dest);
-            //         if (dest.indexOf(cwd) == 0) {
-            //             dest = pth.relative(cwd, dest);
-            //         } else {
-            //             return;
-            //         }
-            //         dGlob = '!(' + dest + ')/**';
-            //         if (Array.isArray(glob)) {
-            //             if (glob.indexOf(dGlob) == -1) {
-            //                 glob.push(dGlob);
-            //             }
-            //         } else {
-            //             glob = [glob, dGlob];
-            //         }
-            //         config.glob = glob;
-
-            //     };
-
-            // globHandler();
-            // Solution = plugin.loadSolution();
-
-            return new Solution(glob, {
-                cwd: config.cwd,
-                dest: config.dest,
-                optimize: config.optimize,
-                // lastRun: gulp.lastRun('release'),
-                sourcemap: config.sourcemap
-                    // es6: config.get('es6')
-            })
-            .stream
-            .pipe(ifElse(bs && config.live, function () {
-                return bs.stream({
-                    match: '**/*.*'
-                });
-            }));
-        }
-    ]));
+    gulp.task('release', releaseSeries(Solution));
 
     gulp.task('server', gulp.series([
         function (cb) {
