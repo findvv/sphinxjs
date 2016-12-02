@@ -7,6 +7,7 @@ var gutil = require('gulp-util');
 var _ = require('./util.js');
 var lang = require('./lang.js');
 var config = require('./configure/config.js');
+var _optimize;
 
 function parser(file, cb) {
     var extname = _.extname(file.path);
@@ -110,7 +111,7 @@ function parseJS(file, cb) {
             isWrap: true,
             ns: config.namespace,
             map: config.alias || {},
-            compress: config.optimize
+            compress: _optimize
         });
         if (ret) {
             file.contents = new Buffer(ret.content);
@@ -121,7 +122,9 @@ function parseJS(file, cb) {
     }
 }
 
-module.exports = function () {
+module.exports = function (optimize) {
+    _optimize = optimize;
+
     return through.obj(function (file, enc, cb) {
         if (file.isNull()) {
             this.push(file);

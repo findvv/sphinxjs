@@ -16,11 +16,10 @@ function md5(str) {
         .digest('hex');
 }
 
-module.exports = function () {
+module.exports = function (optimize) {
     return through.obj(function (file, enc, cb) {
         var dest = config.dest,
             path,
-            optimize = config.optimize,
             self = this;
 
         if (file.isNull()) {

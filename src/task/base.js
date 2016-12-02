@@ -60,9 +60,7 @@ Base.prototype = {
     get stream() {
         var stream = mergeStream();
 
-        // 读取文件
-
-        stream = this.src(stream).pipe(getContents());
+        stream = this.src(stream).pipe(getContents(this._optimize));
 
         if (this.conf.error) {
             stream = stream
@@ -97,36 +95,41 @@ Base.prototype = {
         stream = stream.pipe(this.cacheFilter);
         // 编译
         stream = this.compile(stream);
+        if (this._optimize) {
+            stream = this.optimize(stream);
+        }
+
+        // // 拷贝副本
+        // if (this._optimize) {
+        //     stream = stream
+        //         .pipe(copy());
+        // }
 
         stream = this.lang(stream).pipe((require('through2').obj(function (file, enc, cb) {
 
             cb(null, file);
         })));
         stream = this.postrelease(stream);
-        // 拷贝副本
-        if (this._optimize) {
-            stream = stream
-                .pipe(copy());
-        }
-        stream = this.dest(stream);
-        // 优化压缩
-        if (this._optimize) {
-            // 恢复文件，并释放内存
-            this.cacheFilter = filter(function (file) {
-                return !(file.cache && file.cache.enable);
-            }, {
-                restore: true
-            });
-            stream = stream
-                .pipe(copy.restore())
-                .pipe(getContents(this._optimize))
-                .pipe(this.cacheFilter);
+        stream = this.dest(stream, this._optimize);
 
-            stream = this.optimize(stream);
-            stream = this.lang(stream);
-            stream = this.postrelease(stream);
-            stream = this.dest(stream, true);
-        }
+        // // 优化压缩
+        // if (this._optimize) {
+        //     stream = stream
+        //         .pipe(copy.restore())
+        //         .pipe(getContents(this._optimize));
+        //     // 恢复文件，并释放内存
+        //     this.cacheFilter = filter(function (file) {
+        //         return !(file.cache && file.cache.enable);
+        //     }, {
+        //         restore: true
+        //     });
+
+        //     stream = stream.pipe(this.cacheFilter);
+        //     stream = this.optimize(stream);
+        //     stream = this.lang(stream);
+        //     stream = this.postrelease(stream);
+        //     stream = this.dest(stream, true);
+        // }
 
         stream.on('finish', function (e) {
             mail.send('【sphinx release Error】');
@@ -202,10 +205,10 @@ Base.prototype = {
     // 语言转化
     lang: function (stream) {
         stream = stream
-            .pipe(mod())
+            .pipe(mod(this._optimize))
             .pipe(inline())
             .pipe(this.cacheFilter.restore)
-            .pipe(embed());
+            .pipe(embed(this._optimize));
         return stream;
     },
 
@@ -242,7 +245,7 @@ Base.prototype = {
 
         return stream
             .pipe(writeCache())
-            .pipe(cached())
+            .pipe(cached(this._optimize))
             .pipe(gulp.dest(this._dest, {
                 cwd: this._cwd
             }));
