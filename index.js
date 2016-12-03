@@ -36,7 +36,6 @@ function releaseSeries(Solution) {
     if (config.optimize) {
         fns.push(createRelease(Solution, true));
     }
-
     return gulp.series(fns);
 }
 
