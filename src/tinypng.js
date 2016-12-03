@@ -25,8 +25,8 @@ module.exports = function () {
         };
 
         if (file.isBuffer()) {
-            if (tinypngPath && _.exists(tinypngPath)) {
 
+            if (tinypngPath && _.exists(tinypngPath) && _.extname(file.path).toLocaleLowerCase() == '.png') {
                 sp = spawn('sh', [tinypngPath, file.path], {
                     cwd: file.cwd
                 });
