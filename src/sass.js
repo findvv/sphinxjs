@@ -129,7 +129,6 @@ module.exports = {
 
             if (file.isBuffer()) {
                 contents = file.contents.toString();
-
                 contents = contents.replace(reg, function (all, value, url) {
                     var info;
 

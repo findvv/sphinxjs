@@ -36,7 +36,7 @@ var config = {
                 delete require.cache[path];
                 model = conf || {};
                 if (fileCache.mtime != lastTime) {
-                    if (fileCache && Number(fileCache.content.notEmbedSymbol) != Number(model.notEmbedSymbol)) {
+                    if (fileCache && fileCache.content && Number(fileCache.content.notEmbedSymbol) != Number(model.notEmbedSymbol)) {
                         require('../cache/cache.js').clean();
                     }
                     fileCacheObj.setContents(model, lastTime);

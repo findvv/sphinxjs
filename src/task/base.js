@@ -229,7 +229,7 @@ Base.prototype = {
                 var path = file.path,
                     extname = _.extname(path);
 
-                return _.isJs(extname) || _.isCss(extname);
+                return _.isJs(extname) || _.isCss(extname) || _.isImage(extname);
             }, {
                 restore: true
             });
