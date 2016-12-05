@@ -232,7 +232,7 @@ _.uri = function (filepath, dirname, cwd) {
 
     if (info.realpath) {
         filepath = info.realpath;
-        if (filepath.indexOf(':') === -1) {
+        if (filepath.indexOf(':') === -1 && !(/^\/\//.test(filepath))) {
             // 绝对路径
             if (filepath[0] === '/') {
                 filepath = [cwd, filepath].join('/');
