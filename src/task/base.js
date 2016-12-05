@@ -278,7 +278,11 @@ Base.handler = {
             // js 文件压缩
             // todo 设置参数
             return stream
-                .pipe(uglify());
+                .pipe(uglify({
+                    compress: {
+                        sequences: false
+                    }
+                }));
         }
     },
     css: {
