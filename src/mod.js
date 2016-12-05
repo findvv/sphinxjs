@@ -85,7 +85,7 @@ function parseHtml(file) {
 function parseJS(file, cb) {
     var ret,
         contents,
-        regExp = /\'use module\';/gim;
+        regExp = /(['"])use module\1;/gim;
 
     if (file.cache && file.cache.enable) {
         file.cache.getConfig(function (err, config) {
@@ -99,8 +99,9 @@ function parseJS(file, cb) {
     } else {
         contents = file.contents.toString();
 
-        if (!(regExp.test(contents))) {
 
+
+        if (!(regExp.test(contents))) {
             return;
         }
 
@@ -113,6 +114,8 @@ function parseJS(file, cb) {
             map: config.alias || {},
             compress: _optimize
         });
+
+
         if (ret) {
             file.contents = new Buffer(ret.content);
 
@@ -135,13 +138,11 @@ module.exports = function (optimize) {
             this.push(file);
             return cb();
         }
-
         if (file.isBuffer()) {
             try {
                 parser(file);
 
             } catch (e) {
-                console.log(file.path);
                 return cb(new gutil.PluginError('mod', e));
             }
         }
