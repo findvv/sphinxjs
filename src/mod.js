@@ -60,7 +60,9 @@ function parseHtml(file) {
                 src: file.path,
                 based: file.cwd,
                 content: content,
-                isWrap: false
+                isWrap: false,
+                ns: config.namespace,
+                map: config.alias || {}
             });
 
             depsOrder[nContent] = ret.deps;
