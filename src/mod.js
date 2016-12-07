@@ -99,8 +99,6 @@ function parseJS(file, cb) {
     } else {
         contents = file.contents.toString();
 
-
-
         if (!(regExp.test(contents))) {
             return;
         }
@@ -114,7 +112,6 @@ function parseJS(file, cb) {
             map: config.alias || {},
             compress: _optimize
         });
-
 
         if (ret) {
             file.contents = new Buffer(ret.content);

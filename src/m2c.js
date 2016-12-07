@@ -144,7 +144,7 @@ var util = {
         return isFlag;
     },
     requireArgHandle: function (argv, based, isCheckFileExists) {
-        var requireArgv, relative, item, _export, info, id;
+        var requireArgv, item, _export, info, id;
 
         if (_.isString(argv)) {
             requireArgv = argv;
@@ -160,23 +160,28 @@ var util = {
             requireArgv = argv[0].value;
         }
 
-        if (requireArgv in map) {
+        if (pth.extname(requireArgv).replace('.', '') == '') {
+            requireArgv += '.js';
+        }
 
-            item = map[requireArgv];
-            if ('path' in item) {
+        info = this.uri(requireArgv, dirname, based);
 
-                requireArgv = item.path;
+        this.checkFileExists(info.realpath, isCheckFileExists);
+        if (info.subpath in map || ('/' + info.subpath) in map) {
 
-                if ('exports' in item) {
+            item = map[info.subpath] || map['/' + info.subpath];
+            if (item) {
+
+                // requireArgv = item.path;
+
+                if ('exports' in item || 'deps' in item) {
                     _export = item.exports;
 
-                    info = this.uri(requireArgv, dirname, based);
-
-                    this.checkFileExists(info.realpath, isCheckFileExists);
+                    // info = this.uri(requireArgv, dirname, based);
 
                     return {
                         path: info.subpath,
-                        exports: _export,
+                        exports: _export || util.buildId(info.realpath),
                         usemap: true,
                         deps: item.deps || []
                     };
@@ -184,15 +189,11 @@ var util = {
             } else {
                 error('please checked your alias config');
             }
-        } else {
-            if (pth.extname(requireArgv).replace('.', '') == '') {
-                requireArgv += '.js';
-            }
         }
 
-        info = this.uri(requireArgv, dirname, based);
+        // info = this.uri(requireArgv, dirname, based);
 
-        this.checkFileExists(info.realpath, isCheckFileExists);
+        // this.checkFileExists(info.realpath, isCheckFileExists);
         id = util.buildId(info.realpath);
         this.commentsMap(id, info.subpath);
         return {
@@ -377,7 +378,9 @@ function m2cByAST(opts) {
 
     return {
         content: util.ast2Content(ast, compress),
-        deps: deps
+        deps: deps.map(function (v) {
+            return v.toString().replace(/^\//, '');
+        })
     };
 }
 
