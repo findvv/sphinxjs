@@ -27,6 +27,7 @@ function execJs(contents) {
         if (!url) {
             return m;
         }
+
         switch (type) {
             case '__inline':
                 m = lang.jsEmbed.wrap(url);
@@ -47,7 +48,8 @@ function execJs(contents) {
 
 function execCss(contents) {
     // 解决注释 /* */ 也会内嵌问题 (?:\/\*[\s\S]*?(?:\*\/|$))
-    var reg = /(?:\/\*[\s\S]*?(?:\*\/|$))|url\s*\(\s*("(?:[^\\"\r\n\f]|\\[\s\S])+"|'(?:[^\\'\n\r\f]|\\[\s\S])+'|[^}\s]+)\s*\)(\s*;?)/g;
+    // var reg = /(?:\/\*[\s\S]*?(?:\*\/|$))|url\s*\(\s*("(?:[^\\"\r\n\f]|\\[\s\S])+"|'(?:[^\\'\n\r\f]|\\[\s\S])+'|[^}\s]+)\s*\)(\s*;?)/g;
+    var reg = /(?:\/\*[\s\S]*?(?:\*\/|$))|url\s*\(\s*("(?:[^\\"\r\n\f\(\)]|\\[\s\S])+"|'(?:[^\\'\n\r\f\(\)]|\\[\s\S])+'|[^}\s\(\)]+)\s*\)(\s*;?)/g;
 
     return contents.replace(reg, function (m, url, last) {
 
