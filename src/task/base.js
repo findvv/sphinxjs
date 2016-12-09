@@ -95,8 +95,13 @@ Base.prototype = {
         stream = stream.pipe(this.cacheFilter);
         // 编译
         stream = this.compile(stream);
+
         if (this._optimize) {
-            stream = this.optimize(stream);
+            stream = this.optimizeByHandler(stream, ['image']);
+            stream = this.lang(stream);
+            stream = this.optimizeByHandler(stream, null, ['image']);
+        } else {
+            stream = this.lang(stream);
         }
 
         // // 拷贝副本
@@ -105,10 +110,6 @@ Base.prototype = {
         //         .pipe(copy());
         // }
 
-        stream = this.lang(stream).pipe((require('through2').obj(function (file, enc, cb) {
-
-            cb(null, file);
-        })));
         stream = this.postrelease(stream);
         stream = this.dest(stream, this._optimize);
 
@@ -139,18 +140,19 @@ Base.prototype = {
     },
 
     // 对 compile、optimize、postrelease 的封装
-    job: function (stream, type) {
-        var handlers = [];
+    job: function (stream, type, list) {
+        var handlers = list || [];
 
         if (!type) {
             return stream;
         }
         this.handler = this.handler || {};
-
-        handlers = Array.prototype.concat(
-            Object.keys(Base.handler),
-            Object.keys(this.handler)
-        );
+        if (handlers.length == 0) {
+            handlers = Array.prototype.concat(
+                Object.keys(Base.handler),
+                Object.keys(this.handler)
+            );
+        }
 
         handlers = unique(handlers);
 
@@ -197,9 +199,32 @@ Base.prototype = {
         return this.job(stream, 'compile');
     },
 
+    optimizeByHandler: function (stream, include, exclude) {
+        var list = [], result = [];
+
+        list = Array.prototype.concat(
+            Object.keys(Base.handler),
+            Object.keys(this.handler)
+        );
+
+        list = unique(list);
+
+        include = include || list;
+        exclude = exclude || [];
+
+        list.forEach(function (v) {
+            if (include.indexOf(v) > -1 && exclude.indexOf(v) == -1) {
+                result.push(v);
+            }
+        });
+
+        return this.job(stream, 'optimize', result);
+    },
+
     // 压缩
-    optimize: function (stream) {
-        return this.job(stream, 'optimize');
+    optimize: function (stream, handler) {
+
+        return this.job(stream, 'optimize', handler);
     },
 
     // 语言转化
