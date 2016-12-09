@@ -42,6 +42,14 @@ function unique(array) {
     return r;
 }
 
+function getCacheFilter() {
+    return filter(function (file) {
+        return !(file.cache && file.cache.enable);
+    }, {
+        restore: true
+    });
+}
+
 function Base(path, conf) {
     this._path = path;
     this._optimize = conf.optimize;
@@ -58,7 +66,7 @@ Base.prototype = {
      * 返回 stream
      */
     get stream() {
-        var stream = mergeStream();
+        var cacheFilter, stream = mergeStream();
 
         stream = this.src(stream).pipe(getContents(this._optimize));
 
@@ -86,11 +94,7 @@ Base.prototype = {
                 }));
         }
 
-        this.cacheFilter = filter(function (file) {
-            return !(file.cache && file.cache.enable);
-        }, {
-            restore: true
-        });
+        this.cacheFilter = getCacheFilter();
 
         stream = stream.pipe(this.cacheFilter);
         // 编译
@@ -99,7 +103,10 @@ Base.prototype = {
         if (this._optimize) {
             stream = this.optimizeByHandler(stream, ['image']);
             stream = this.lang(stream);
+            cacheFilter = getCacheFilter();
+            stream = stream.pipe(cacheFilter);
             stream = this.optimizeByHandler(stream, null, ['image']);
+            stream = stream.pipe(cacheFilter.restore);
         } else {
             stream = this.lang(stream);
         }
@@ -200,7 +207,8 @@ Base.prototype = {
     },
 
     optimizeByHandler: function (stream, include, exclude) {
-        var list = [], result = [];
+        var list = [],
+            result = [];
 
         list = Array.prototype.concat(
             Object.keys(Base.handler),
