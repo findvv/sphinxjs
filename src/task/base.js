@@ -99,7 +99,6 @@ Base.prototype = {
         stream = stream.pipe(this.cacheFilter);
         // 编译
         stream = this.compile(stream);
-
         if (this._optimize) {
             stream = this.optimizeByHandler(stream, ['image']);
             stream = this.lang(stream);
@@ -257,6 +256,7 @@ Base.prototype = {
 
         // flag 是否更改文件名生成 .min 文件
         if (flag) {
+
             rename = require('gulp-rename');
             filterStream = filter(function (file) {
                 var path = file.path,
@@ -278,7 +278,7 @@ Base.prototype = {
 
         return stream
             .pipe(writeCache())
-            .pipe(cached(this._optimize))
+            .pipe(cached(flag))
             .pipe(gulp.dest(this._dest, {
                 cwd: this._cwd
             }));
