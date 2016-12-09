@@ -10,7 +10,7 @@ var objectAssign = require('object-assign');
 var rimraf = require('rimraf');
 
 function getCacheDir() {
-    var cacheDir = pth.join(_.getCacheDir(), _.last(config.cwd.split(pth.sep)));
+    var cacheDir = pth.join(_.getCacheDir(), config.cwd.replace(/[\\\/]/ig, '_'));
 
     mkdirp(cacheDir);
 
