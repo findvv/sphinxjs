@@ -84,6 +84,7 @@ var util = {
 
         ns = ns || DEFAULTNAMESPACE;
         wrapper.push('(function(' + ns + '){');
+
         if (exportName) {
             wrapper.push(exportName + ' = ' + exportName + ' || {};');
         }
@@ -144,7 +145,7 @@ var util = {
         return isFlag;
     },
     requireArgHandle: function (argv, based, isCheckFileExists) {
-        var requireArgv, item, _export, info, id;
+        var requireArgv, item, _export, info, id, extname;
 
         if (_.isString(argv)) {
             requireArgv = argv;
@@ -160,7 +161,9 @@ var util = {
             requireArgv = argv[0].value;
         }
 
-        if (pth.extname(requireArgv).replace('.', '') == '') {
+        extname = pth.extname(requireArgv).replace('.', '');
+
+        if (!(/^(js|css|scss|sass|less)$/.test(extname))) {
             requireArgv += '.js';
         }
 
@@ -375,7 +378,6 @@ function m2cByAST(opts) {
     if (isWrap) {
         ast = util.wrap(ast, exportName, ns);
     }
-
     return {
         content: util.ast2Content(ast, compress),
         deps: deps.map(function (v) {
