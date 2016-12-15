@@ -242,4 +242,35 @@
 // s.replace(regExp, function () {
 //     console.dir(arguments);
 // });
+// var regExp = /(?:(?:(?:require)\s*?\((['"]{1})([^'"]*)\1\))|(module\.exports))/gmi;
+
+// var s = "require('xx.js');module.exports = 5";
+
+// s.replace(regExp, function () {
+//     console.dir(arguments);
+// });
+
+var tmpl = require('lodash').template;
+var _ = require('underscore');
+
+var str = `<% var list = obj.list; var start = obj.start %>
+<% for(var i = start * 8; i < start * 8 + 8; i++) { %>
+<li>
+    <%if (i) {%>
+        <em></em>
+    <%}%>
+    <a class="news-info" data-q="<%= list[i] %>" data-sps="<%= i + 11 %>" href="javascript:;">
+        <p class="news-shelter">
+            <span class="news-title"><%= list[i] %></span>
+        </p>
+    </a>
+</li>
+<% } %>${Date.now()}`;
+
+// console.log(tmpl(str, {
+//     variable: 'obj'
+// }));
+
+console.log(_.template(str).source);
+
 

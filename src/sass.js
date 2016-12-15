@@ -51,7 +51,8 @@ function resolve(filename, dir, cwd) {
             found = {
                 path: info.realpath,
                 dirname: info.dirname,
-                contents: contents.toString()
+                contents: contents.toString(),
+                info: info
             };
 
             return false;
@@ -130,19 +131,27 @@ module.exports = {
             if (file.isBuffer()) {
                 contents = file.contents.toString();
                 contents = contents.replace(reg, function (all, value, url) {
-                    var info;
+                    var info, result;
 
                     if (url && !(/;\s*$/.test(url))) {
                         all += ';';
                     }
                     if (url) {
                         url = url.replace(/["';]*/igm, '');
-                        info = util.uri(url, file.dirname, file.cwd);
-                        if (info.url && info.exists) {
-                            url = info.quote + info.url + info.query + info.quote;
+                        result = resolve(url, file.dirname, file.cwd);
+
+                        //info = util.uri(url, file.dirname, file.cwd);
+                        // if (info.url && info.exists) {
+                        //     url = info.quote + info.url + info.query + info.quote;
+                        // }
+                        //
+                        if (result) {
+                            info = result.info;
+                            url = info.quote + path.relative(file.dirname, result.path) + info.quote;
+                            embeds.push(lang.cssImportEmbed.wrap(url));
+
                         }
 
-                        embeds.push(lang.cssImportEmbed.wrap(url));
                     } else {
 
                     }
@@ -157,28 +166,4 @@ module.exports = {
             }
         });
     }
-    // delSphinx: function () {
-    //     return through.obj(function (file, enc, cb) {
-    //         if (file.isNull()) {
-    //             this.push(file);
-    //             return cb();
-    //         }
-
-    //         if (file.isStream()) {
-    //             this.push(file);
-    //             return cb();
-    //         }
-
-    //         if (file.isBuffer()) {
-    //             var contents = file.contents.toString();
-
-    //             contents = contents.replace(/@sphinx/gim, '');
-
-    //             file.contents = new Buffer(contents);
-    //             this.push(file);
-    //             return cb();
-    //         }
-    //     });
-    // }
-
 };
