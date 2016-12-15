@@ -9,6 +9,10 @@ var mkdirp = require('mkdirp');
 var objectAssign = require('object-assign');
 var rimraf = require('rimraf');
 
+var SPHINX_CACHE = {
+    PNG: 1 // 保留PNG图片的缓存（png的缓存不依赖版本号）
+};
+
 function getCacheDir() {
     var cacheDir = pth.join(_.getCacheDir(), config.cwd.replace(/[\\\/]/ig, '_'));
 
@@ -31,12 +35,14 @@ function Cache(path, mtime) {
             mtime = mtime.getTime();
         }
     }
+
     this.timestamp = mtime;
     this.deps = {};
     this.depsOrder = {};
     this.requires = [];
     this.arequires = [];
     this.version = pkg.version;
+    this.isPNG = pth.extname(path).toLocaleLowerCase() == '.png';
     Object.defineProperty(this, 'cacheInfo', {
 
         configurable: false,
@@ -92,6 +98,7 @@ Cache.prototype = {
 
         return info;
     },
+
     save: function (contents, onWrite) {
         var info;
 
@@ -199,10 +206,27 @@ Cache.prototype = {
             });
         });
     },
-    _revert: function (cacheInfo) {
-        var deps, self = this;
+    getEnvVar: function () {
+        var env = process.env['SPHINX_CACHE_PNG'];
 
-        if (cacheInfo.version == self.version && cacheInfo.timestamp == self.timestamp) {
+        return {
+            keepPNGCache: env == SPHINX_CACHE.PNG
+        };
+    },
+    _revert: function (cacheInfo) {
+        var deps, self = this,
+            envVar = this.getEnvVar(),
+            useCMPVersion = true;
+
+        if (cacheInfo.timestamp == self.timestamp) {
+
+            if (this.isPNG && envVar.keepPNGCache) {
+                useCMPVersion = false;
+            }
+
+            if (useCMPVersion && cacheInfo.version != self.version) {
+                return false;
+            }
             deps = cacheInfo.deps;
             var allValid = Object.keys(deps).every(function (f) {
                 var mtime = _.mtime(f);

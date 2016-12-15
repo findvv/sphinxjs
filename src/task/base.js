@@ -5,7 +5,7 @@ var gulp = require('../../gulp');
 var plumber = require('gulp-plumber');
 var notify = require('gulp-notify');
 var filter = require('gulp-filter');
-var sass = require('gulp-sass');
+var sass = require('../sm-sass.js');
 var inline = require('../inline');
 var embed = require('../embed');
 var copy = require('../copy');
@@ -343,13 +343,16 @@ Base.handler = {
 
                     return sourcemaps.init();
                 }))
+
                 .pipe(scssFilter)
                 .pipe(fixImport())
+
                 .pipe(sass({
                     importer: importer(this._cwd),
                     includePaths: [this._cwd],
                     outputStyle: 'expanded'
                 }))
+
                 //.pipe(delSphinx())
                 .pipe(ifElse(this._sourcemap, function () {
                     var sourcemaps = require('gulp-sourcemaps');
