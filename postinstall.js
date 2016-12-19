@@ -3,7 +3,7 @@
 var spawn = require('cross-spawn');
 var path = require('path');
 var fs = require('fs');
-var nodePath = process.env['_'];
+var nodePath = process.execPath;
 
 if (!fs.existsSync(path.join(nodePath, '../../lib/node_modules/sphinx-sln-sc')) && !fs.existsSync(path.join(nodePath, '../sp-sc'))) {
     execNpm('install');
