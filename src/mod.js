@@ -60,9 +60,10 @@ function parseHtml(file) {
                 src: file.path,
                 based: file.cwd,
                 content: content,
-                isWrap: false,
+                isWrap: config.wrapJsInHtml,
                 ns: config.namespace,
-                map: config.alias || {}
+                map: config.alias || {},
+                isCheckFileExists: config.isCheckFileExists
             });
 
             depsOrder[nContent] = ret.deps;
@@ -112,6 +113,7 @@ function parseJS(file, cb) {
             isWrap: true,
             ns: config.namespace,
             map: config.alias || {},
+            isCheckFileExists: config.isCheckFileExists,
             compress: _optimize
         });
 

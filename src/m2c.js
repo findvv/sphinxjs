@@ -20,7 +20,7 @@ var map = {};
 var commentsMap = {};
 
 function error(message) {
-    throw new Error(message + 'in [' + src + ']');
+    throw new Error(message + ' in [' + src + ']');
 }
 var util = {
     uri: function (url, dirname, cwd) {
