@@ -1,16 +1,10 @@
 'use strict';
 var through = require('through2');
-var crypto = require('crypto');
-var Store = require('./store.js');
 var config = require('./configure/config.js');
-var cache = new Store;
 var pth = require('path');
 var _ = require('./util.js');
-var gutil = require('gulp-util');
-var fs = require('fs');
-var Vinyl = require('Vinyl');
+var Vinyl = require('vinyl');
 var map = {};
-
 
 module.exports = function (optimize) {
     return through.obj(function (file, enc, cb) {
@@ -19,7 +13,7 @@ module.exports = function (optimize) {
             return cb();
         }
 
-        if (file.isStream()) {
+        if (file.isStream() || !_.isText(_.extname(file.path))) {
             this.push(file);
             return cb();
         }
@@ -27,10 +21,7 @@ module.exports = function (optimize) {
         if (file.isBuffer()) {
             if (file.cache) {
                 map[file.relative] = {
-                    requires: file.cache.requires,
-                    inlines: Object.keys(file.cache.deps).map(function (v) {
-                        return pth.relative(file.cwd, v);
-                    })
+                    requires: file.cache.requires
                 };
 
             }

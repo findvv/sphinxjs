@@ -50,7 +50,7 @@ function globFilter(dest) {
             }
         });
 
-        nGlobs.push('**.**');
+        nGlobs.push('*.**');
     }
     if (destGlob) {
         nGlobs.push(destGlob);
@@ -61,16 +61,18 @@ function globFilter(dest) {
 
 function globHandler() {
     var dest = config.dest || 'output',
-        cwd = config.cwd;
+        cwd = config.cwd,
+        regExp;
 
     dest = pth.resolve(cwd, dest);
 
-    if (dest.indexOf(cwd) == 0) {
+    regExp = new RegExp('^' + cwd.replace(/[\/]$/, '') + '/', 'ig');
+
+    if (regExp.test(dest)) {
         dest = pth.relative(cwd, dest);
     } else {
         dest = null;
     }
-
     config.glob = globFilter(dest);
     config.dest = config.dest || 'output';
 }

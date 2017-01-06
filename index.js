@@ -92,7 +92,7 @@ function execute(Solution) {
             var opts = {
                     open: 'external',
                     server: {
-                        baseDir: config.dest,
+                        baseDir: require('path').join(config.cwd, config.dest),
                         directory: true,
                         middleware: [
                             function (req, res, next) {

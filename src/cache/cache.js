@@ -79,6 +79,7 @@ function Cache(path, mtime) {
     });
     this.hasChange = false;
     this.enable = false;
+    this.depsChanged = false;
 }
 
 Cache.prototype = {
@@ -102,7 +103,7 @@ Cache.prototype = {
     save: function (contents, onWrite) {
         var info;
 
-        if (this.enable) {
+        if (this.enable && !this.depsChanged) {
             return onWrite();
         }
 
@@ -243,6 +244,7 @@ Cache.prototype = {
                 self.arequires = cacheInfo.arequires;
                // self.contents = cacheInfo.contents;
                 self.enable = true;
+                self.depsChanged = false;
                 return true;
             }
         } else {
@@ -289,7 +291,7 @@ Cache.prototype = {
                     }
                 }
 
-                this.hasChange = true;
+                this.depsChanged = true;
 
             }
 
@@ -324,6 +326,7 @@ Cache.prototype = {
         }
 
         this.deps = objectAssign(this.deps, deps);
+        this.depsChanged = true;
 
     }
 };

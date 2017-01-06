@@ -178,9 +178,9 @@ module.exports = function (optimize) {
                             }
 
                             deps = file.depsOrder[all] || [];
+
                             // console.log(deps);
                             adeps = getAllDeps(deps, file);
-
                             ret = buildTag(adeps) || '';
                             break;
                     }
@@ -228,7 +228,7 @@ module.exports = function (optimize) {
 
                         tFile.dStatus = 1;
 
-                        var xdeps = getAllDeps(tFile.deps || [], tFile);
+                        var xdeps = getAllDeps(getDeps(tFile), tFile);
 
                         adeps = adeps.concat(xdeps);
 
@@ -244,7 +244,25 @@ module.exports = function (optimize) {
             file.adeps = _.uniq(adeps);
             file.cache.arequires = file.adeps;
             file.cache.addDeps(file.adeps || []);
+
             return adeps;
+        }
+
+        function getDeps(file) {
+            var deps = [];
+
+            if (file.deps) {
+                return file.deps;
+            }
+
+            if (file.cache && file.cache.enable) {
+
+                var config = file.cache.config || {};
+
+                return config.requires || [];
+            }
+
+            return [];
         }
 
         function analysis(obj) {
