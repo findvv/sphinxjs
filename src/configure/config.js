@@ -123,7 +123,7 @@ function defineProperty(key) {
 }
 
 function configFileCache() {
-    var cacheDir = pth.join(_.getCacheDir(), _.last(config.cwd.split(pth.sep)));
+    var cacheDir = pth.join(_.getCacheDir(), config.cwd.replace(/[\\\/]/ig, '_'));
     var cachePath = pth.join(cacheDir, 'sphinx-conf.json');
     var content;
 
@@ -144,7 +144,7 @@ function configFileCache() {
             }
         },
         setContents: function (content, mtime) {
-            mkdirp(cacheDir);
+            mkdirp.sync(cacheDir);
 
             fs.writeFileSync(cachePath, JSON.stringify({
                 mtime: mtime,
