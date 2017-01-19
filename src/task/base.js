@@ -26,6 +26,7 @@ var location = require('../location.js');
 var mod = require('../mod.js');
 var tmpl = require('gulp-template');
 var tinypng = require('../tinypng.js');
+var map = require('../map.js');
 
 // 数组去重
 function unique(array) {
@@ -279,6 +280,7 @@ Base.prototype = {
         return stream
             .pipe(writeCache())
             .pipe(cached(flag))
+            .pipe(map())
             .pipe(gulp.dest(this._dest, {
                 cwd: this._cwd
             }));
@@ -344,17 +346,17 @@ Base.handler = {
                     return sourcemaps.init();
                 }))
 
-                .pipe(scssFilter)
+            .pipe(scssFilter)
                 .pipe(fixImport())
 
-                .pipe(sass({
-                    importer: importer(this._cwd),
-                    includePaths: [this._cwd],
-                    outputStyle: 'expanded'
-                }))
+            .pipe(sass({
+                importer: importer(this._cwd),
+                includePaths: [this._cwd],
+                outputStyle: 'expanded'
+            }))
 
-                //.pipe(delSphinx())
-                .pipe(ifElse(this._sourcemap, function () {
+            //.pipe(delSphinx())
+            .pipe(ifElse(this._sourcemap, function () {
                     var sourcemaps = require('gulp-sourcemaps');
 
                     return sourcemaps.write();
