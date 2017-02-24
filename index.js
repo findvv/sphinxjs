@@ -12,19 +12,19 @@ function createRelease(Solution, optimize) {
         var glob = config.glob;
 
         return new Solution(glob, {
-            cwd: config.cwd,
-            dest: config.dest,
-            optimize: optimize,
-            // lastRun: gulp.lastRun('release'),
-            sourcemap: config.sourcemap
-                // es6: config.get('es6')
-        })
-        .stream
-        .pipe(ifElse(bs && config.live, function () {
-            return bs.stream({
-                match: '**/*.*'
-            });
-        }));
+                cwd: config.cwd,
+                dest: config.dest,
+                optimize: optimize,
+                // lastRun: gulp.lastRun('release'),
+                sourcemap: config.sourcemap
+                    // es6: config.get('es6')
+            })
+            .stream
+            .pipe(ifElse(bs && config.live, function () {
+                return bs.stream({
+                    match: '**/*.*'
+                });
+            }));
     };
 }
 
@@ -101,6 +101,8 @@ function execute(Solution) {
                                 res.setHeader('Pragma', 'no-cache');
                                 next();
                             },
+                            require('nunjucks-component-extension-middleware')(require('path').resolve(config.cwd, config.dest))
+
                         ]
                     },
                     logPrefix: 'SPHINX SERVER'
